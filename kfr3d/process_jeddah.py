@@ -452,14 +452,30 @@ presets['mosque'] = {'label': 'Floating Mosque', 'tx': round(mx), 'tz': round(mz
                      'azim': -1.0, 'elev': 0.42, 'size': 420}
 add_preset('balad', 'Al Balad', 'Jeddah Municipality', -0.3, 0.6, 1600)
 
-# scrub path: ride the corniche south → north (north = smaller z after the flip)
-spine_local = sorted([prj(*p) for p in spine_pts], key=lambda p: -p[1])
+# scrub path: ride the story, not just the road — Al Balad, the fountain,
+# Aqua Tower, then out to the Floating Mosque, south → north
+def at(name, dx=0, dz=0):
+    b = named.get(name)
+    if not b:
+        return None
+    x, z = centroid(b)
+    return (x + dx, z + dz)
+
+stops = [at('Jeddah Municipality'), (fx, fz), at('Aqua Tower'), (mx, mz)]
+stops = [s for s in stops if s]
+if len(stops) < 2:                       # fall back to the road itself
+    sl = sorted([prj(*p) for p in spine_pts], key=lambda p: -p[1])
+    stops = [sl[int((len(sl) - 1) * i / 3)] for i in range(4)]
+
+SIZES = [1700, 1400, 950, 320]      # tighten right down onto the mosque
+ELEVS = [0.46, 0.48, 0.50, 0.34]    # and drop low for its silhouette
+AZIMS = [-0.95, -0.80, -0.62, -0.42]
 anchors = []
-for i in range(4):
-    p = spine_local[int((len(spine_local) - 1) * i / 3)]
-    anchors.append({'tx': round(p[0]), 'tz': round(p[1]),
-                    'azim': -0.95 + 0.45 * i / 3, 'elev': 0.46 + 0.12 * i / 3,
-                    'size': 1500})
+for i, s in enumerate(stops):
+    anchors.append({'tx': round(s[0]), 'tz': round(s[1]),
+                    'azim': AZIMS[i] if i < len(AZIMS) else -0.6,
+                    'elev': ELEVS[i] if i < len(ELEVS) else 0.48,
+                    'size': SIZES[i] if i < len(SIZES) else 1400})
 
 scene = {
     'meta': {'city': 'Jeddah', 'spine': 'Corniche Road',
