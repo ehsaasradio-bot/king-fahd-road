@@ -11,123 +11,109 @@
 
 <style>
   :root {
-    --ink: #2E3192; --ink-deep: #1B1E63; --ink-soft: #7A80CF;
-    --green: #8CC63F; --green-dk: #5c8f28;
-    --paper: #ffffff; --night: #0B0D2E;
+    --ink: #2E5BE8; --ink-deep: #1B2E80; --ink-soft: #7A93E8;
+    --wash: #D6E4FB; --green: #8CC63F; --green-dk: #5c8f28;
+    --paper: #ffffff; --night: #070A24;
     --font: var(--font-f-aeonik-pro, "Aeonik Pro", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif);
     --mono: ui-monospace, "SF Mono", Menlo, monospace;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: var(--font); color: var(--ink-deep); background: var(--paper);
-    text-transform: uppercase; overflow-x: hidden;
-    transition: background 0.6s;
+    text-transform: uppercase; overflow-x: hidden; transition: background .6s;
   }
   body.night { background: var(--night); }
   ::selection { background: var(--green); color: #fff; }
 
-  /* ---------------- the one long act ---------------- */
-  #act { height: 1000vh; position: relative; }
+  #act { height: 1100vh; position: relative; }
   #stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
 
-  /* layer 1 — the live 3D city, revealed as the drawing dissolves */
+  /* the live 3D city, revealed when the drawing parts */
   #map { position: absolute; inset: 0; opacity: 0; }
 
-  /* layer 2 — the hand-drawn elevation */
-  #draw {
-    position: absolute; left: 0; right: 0; bottom: 12vh; z-index: 2;
-    width: 100%; height: 62vh; pointer-events: none;
+  /* ---------- the diorama: flat drawing, split into depth planes ---------- */
+  #diorama {
+    position: absolute; inset: 0; z-index: 2; pointer-events: none;
+    perspective: 1200px; perspective-origin: 50% 62%;
   }
-  #draw path, #draw line, #draw circle, #draw rect, #draw ellipse, #draw polyline {
-    fill: none; stroke: var(--ink); stroke-width: 1.6;
-    stroke-linejoin: round; stroke-linecap: round;
-    vector-effect: non-scaling-stroke;
+  #dolly { position: absolute; inset: 0; transform-style: preserve-3d; }
+  .plane { position: absolute; inset: 0; transform-style: preserve-3d; }
+  .plane svg {
+    position: absolute; left: 0; right: 0; bottom: 14vh;
+    width: 100%; height: 50vh; overflow: visible;
   }
-  #draw .fine { stroke-width: 1; stroke: var(--ink-soft); }
-  #draw .accent { stroke: var(--green-dk); stroke-width: 2; }
+  .plane path, .plane line, .plane circle, .plane rect, .plane ellipse, .plane polyline {
+    fill: none; stroke: var(--ink); stroke-width: 2;
+    stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke;
+  }
+  .plane .fine { stroke-width: 1.1; stroke: var(--ink-soft); }
+  .plane .accent { stroke: var(--green-dk); stroke-width: 2.4; }
+  .plane .wash { fill: var(--wash); stroke: none; }
+  .plane .solid { fill: var(--ink); stroke: none; }
 
-  /* the ruled horizon the skyline stands on — becomes the sea */
+  /* the ruled ground the whole drawing stands on */
   #horizon {
-    position: absolute; left: 0; right: 0; bottom: 12vh; height: 1.6px;
+    position: absolute; left: 0; right: 0; bottom: 14vh; height: 2px;
     background: var(--ink); z-index: 3; transform-origin: left center; transform: scaleX(0);
   }
 
-  /* ---------------- type ---------------- */
-  .copy { position: absolute; inset: 0; z-index: 4; pointer-events: none; padding: 0 6vw; }
-  .eyebrow {
-    position: absolute; top: 10vh; left: 6vw;
-    font-family: var(--mono); font-size: 10px; letter-spacing: 0.45em; color: var(--green-dk);
-  }
+  /* ---------- type ---------- */
+  .copy { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+  .eyebrow { position: absolute; top: 9vh; left: 6vw; font-family: var(--mono); font-size: 10px; letter-spacing: .45em; color: var(--green-dk); }
   h1 {
-    position: absolute; top: 16vh; left: 6vw; right: 6vw;
-    font-weight: 400; font-size: clamp(3rem, 13vw, 12rem); line-height: 0.86;
-    letter-spacing: 0.02em; color: var(--ink);
+    position: absolute; top: 11vh; left: 0; right: 0; text-align: center;
+    font-weight: 400; font-size: clamp(3rem, 12vw, 11rem); line-height: .86;
+    letter-spacing: .06em; color: var(--ink-deep);
   }
   h1 .ch { display: inline-block; will-change: transform; }
   h1 .dot { color: var(--green); }
   .sub {
-    position: absolute; top: 42vh; left: 6vw; max-width: 460px;
-    font-size: clamp(10px, 1.3vw, 12px); letter-spacing: 0.26em; line-height: 2.2; color: var(--ink-soft);
+    position: absolute; top: 27vh; left: 50%; transform: translateX(-50%); width: min(520px, 84vw);
+    text-align: center; font-size: clamp(10px, 1.3vw, 12px); letter-spacing: .26em; line-height: 2.2; color: var(--ink-soft);
   }
-  .cue {
-    position: absolute; bottom: 4vh; left: 6vw; z-index: 5;
-    font-family: var(--mono); font-size: 10px; letter-spacing: 0.4em; color: var(--ink);
-    display: flex; align-items: center; gap: 10px;
-  }
+  .cue { position: absolute; bottom: 4vh; left: 6vw; z-index: 5; font-family: var(--mono); font-size: 10px; letter-spacing: .4em; color: var(--ink); display: flex; align-items: center; gap: 10px; }
   .cue i { display: block; width: 1.5px; height: 30px; background: var(--ink); }
-  body.night .cue, body.night .cue i { color: #DFE2FF; background: none; }
-  body.night .cue i { background: #DFE2FF; }
+  body.night .cue { color: #DFE2FF; } body.night .cue i { background: #DFE2FF; }
 
-  /* ---------------- chapter cards ---------------- */
+  /* ---------- cards ---------- */
   .card {
     position: absolute; z-index: 4; pointer-events: none;
     left: 6vw; bottom: 14vh; width: min(380px, 84vw); padding: 20px 22px;
-    background: rgba(255,255,255,0.32);
-    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
-    border: 1.5px solid rgba(46,49,146,0.6); border-radius: 4px;
-    box-shadow: 6px 6px 0 rgba(46,49,146,0.08);
-    opacity: 0; visibility: hidden;
+    background: rgba(255,255,255,.32); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+    border: 1.5px solid rgba(46,91,232,.55); border-radius: 4px;
+    box-shadow: 6px 6px 0 rgba(46,91,232,.1); opacity: 0; visibility: hidden;
   }
   .card.right { left: auto; right: 6vw; }
-  .card .tag { font-family: var(--mono); font-size: 9px; letter-spacing: 0.4em; color: var(--green-dk); margin-bottom: 8px; }
-  .card h2 { font-weight: 400; font-size: clamp(18px, 2.6vw, 27px); letter-spacing: 0.06em; color: var(--ink); }
+  .card .tag { font-family: var(--mono); font-size: 9px; letter-spacing: .4em; color: var(--green-dk); margin-bottom: 8px; }
+  .card h2 { font-weight: 400; font-size: clamp(18px, 2.6vw, 27px); letter-spacing: .06em; color: var(--ink-deep); }
   .card .fig { font-family: var(--mono); font-size: clamp(26px, 4vw, 40px); color: var(--ink); margin: 10px 0 2px; font-variant-numeric: tabular-nums; }
-  .card .fig em { font-style: normal; font-size: 0.45em; color: var(--ink-soft); }
-  .card p { font-size: 10px; letter-spacing: 0.13em; line-height: 1.9; color: var(--ink-soft); margin-top: 6px; }
-  body.night .card { background: rgba(19,22,74,0.25); border-color: rgba(122,128,216,0.55); backdrop-filter: none; -webkit-backdrop-filter: none; }
-  body.night .card h2 { color: #DFE2FF; }
+  .card .fig em { font-style: normal; font-size: .45em; color: var(--ink-soft); }
+  .card p { font-size: 10px; letter-spacing: .13em; line-height: 1.9; color: var(--ink-soft); margin-top: 6px; }
+  body.night .card { background: rgba(14,20,74,.28); border-color: rgba(122,147,232,.5); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  body.night .card h2 { color: #DFE6FF; }
   body.night .card .fig { color: var(--green); }
-  body.night .card p { color: #8A8FD8; }
-  body.night h1 { color: #DFE2FF; }
+  body.night .card p { color: #8A95D8; }
 
-  /* progress rail */
-  #rail { position: absolute; right: 26px; top: 50%; transform: translateY(-50%); z-index: 5; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+  #rail { position: absolute; right: 26px; top: 50%; transform: translateY(-50%); z-index: 5; display: flex; flex-direction: column; gap: 12px; }
   #rail .dot2 { width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid var(--ink); background: #fff; transition: background .3s, transform .3s; }
   #rail .dot2.on { background: var(--green); border-color: var(--green-dk); transform: scale(1.4); }
-  body.night #rail .dot2 { border-color: #7A80D8; background: #13164A; }
+  body.night #rail .dot2 { border-color: #7A93E8; background: #101748; }
   body.night #rail .dot2.on { background: var(--green); }
 
-  /* ---------------- explore ---------------- */
   #explore { position: relative; padding: 14vh 6vw 8vh; background: var(--night); }
-  #explore h2 { font-weight: 400; font-size: clamp(2rem, 6vw, 4.4rem); color: #DFE2FF; letter-spacing: 0.03em; }
+  #explore h2 { font-weight: 400; font-size: clamp(2rem, 6vw, 4.4rem); color: #DFE6FF; letter-spacing: .03em; }
   #explore h2 span { color: var(--green); }
-  #explore .note { font-family: var(--mono); font-size: 10px; letter-spacing: 0.3em; color: #7A80CF; margin: 2vh 0 5vh; }
-  #exploreMap { display: block; height: 82vh; border: 1.5px solid #7A80D8; border-radius: 5px; box-shadow: 8px 8px 0 rgba(4,6,30,0.55); }
-  footer { padding: 5vh 6vw 6vh; background: var(--night); border-top: 1.5px solid #23265C; font-family: var(--mono); font-size: 9px; letter-spacing: 0.22em; color: #7A80CF; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-  footer a { color: #C9CDFF; }
+  #explore .note { font-family: var(--mono); font-size: 10px; letter-spacing: .3em; color: #7A93E8; margin: 2vh 0 5vh; }
+  #exploreMap { display: block; height: 82vh; border: 1.5px solid #7A93E8; border-radius: 5px; box-shadow: 8px 8px 0 rgba(4,8,36,.6); }
+  footer { padding: 5vh 6vw 6vh; background: var(--night); border-top: 1.5px solid #1B2660; font-family: var(--mono); font-size: 9px; letter-spacing: .22em; color: #7A93E8; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  footer a { color: #C9D4FF; }
 
   @media (prefers-reduced-motion: reduce) {
-    #act { height: auto; }
-    #stage { position: relative; }
-    #map { opacity: 1; }
+    #act { height: auto; } #stage { position: relative; }
+    #map { opacity: 1; } #diorama, #rail, .cue { display: none; }
     .card { position: static; opacity: 1; visibility: visible; margin: 14px 0; }
-    #draw, #rail, .cue { display: none; }
   }
-  @media (max-width: 700px) {
-    #draw { height: 40vh; }
-    .sub { top: 46vh; }
-    #rail { right: 12px; }
-  }
+  @media (max-width: 700px) { .plane svg { height: 40vh; } #rail { right: 12px; } }
 </style>
 </head>
 <body>
@@ -137,143 +123,203 @@
 
     <jeddah-map id="map" sidebar="off" interactive="off"></jeddah-map>
 
-    <!-- My own line-art elevation of Jeddah's landmarks: Al Balad's coral houses
-         and roshan bays, Bab Makkah, the domes and minarets, the sloped and
-         latticed towers, the TV tower, and the sphere. -->
-    <svg id="draw" viewBox="0 0 1600 420" preserveAspectRatio="xMidYEnd meet" aria-label="Jeddah skyline">
-      <!-- minaret -->
-      <path d="M96 400V196h26v204" />
-      <path d="M92 196h34l-6-16h-22z" />
-      <path d="M100 180v-22h18v22" />
-      <path d="M109 158v-16" />
-      <circle cx="109" cy="134" r="7" />
-      <line class="fine" x1="100" y1="240" x2="118" y2="240" />
-      <line class="fine" x1="100" y1="290" x2="118" y2="290" />
+    <!-- My own line drawing of Jeddah's landmarks, split across depth planes
+         so the camera can fly through it. Far planes first. -->
+    <div id="diorama"><div id="dolly">
 
-      <!-- domed mosque -->
-      <path d="M150 400v-96h150v96" />
-      <path d="M162 304c0-52 126-52 126 0" />
-      <path d="M225 252v-18" />
-      <path d="M186 400v-58h24v58" />
-      <path d="M240 400v-58h24v58" />
-      <line class="fine" x1="162" y1="330" x2="288" y2="330" />
+      <!-- ============ plane 0 · sky wash + sparkles ============ -->
+      <div class="plane" data-z="-1000">
+        <svg viewBox="0 0 2000 700" preserveAspectRatio="xMidYEnd meet">
+          <path class="wash" d="M0 640c120-40 200-190 330-190 120 0 150 90 250 60 120-36 150-330 420-330 300 0 300 300 470 300 150 0 180-140 300-140 130 0 170 150 230 210v90z"/>
+          <circle class="wash" cx="640" cy="300" r="80"/>
+          <circle class="wash" cx="1600" cy="270" r="60"/>
+          <g class="fine">
+            <path d="M1080 300v22M1069 311h22"/><path d="M1210 360v20M1200 370h20"/>
+            <path d="M360 420v20M350 430h20"/><path d="M1660 430v18M1651 439h18"/>
+            <path d="M170 480v18M161 489h18"/><path d="M1030 500v16M1022 508h16"/>
+          </g>
+        </svg>
+      </div>
 
-      <!-- Al Balad coral house with roshan bays -->
-      <path d="M330 400V214h150v186" />
-      <path d="M330 214l75-30 75 30" />
-      <rect x="350" y="246" width="34" height="46" />
-      <rect x="426" y="246" width="34" height="46" />
-      <rect x="350" y="316" width="34" height="46" />
-      <rect x="426" y="316" width="34" height="46" />
-      <line class="fine" x1="350" y1="262" x2="384" y2="262" />
-      <line class="fine" x1="350" y1="278" x2="384" y2="278" />
-      <line class="fine" x1="426" y1="262" x2="460" y2="262" />
-      <line class="fine" x1="426" y1="278" x2="460" y2="278" />
-      <line class="fine" x1="350" y1="332" x2="384" y2="332" />
-      <line class="fine" x1="426" y1="332" x2="460" y2="332" />
-      <path d="M392 400v-46h26v46" />
+      <!-- ============ plane 1 · the tallest, farthest ============ -->
+      <div class="plane" data-z="-680">
+        <svg viewBox="0 0 2000 700" preserveAspectRatio="xMidYEnd meet">
+          <!-- Jeddah Tower: the spire -->
+          <path d="M1330 690V300l22-262 24 262v390z"/>
+          <path d="M1352 38v-30"/>
+          <path d="M1330 300l-26 40v350"/>
+          <path d="M1376 300l26 40v350"/>
+          <line class="fine" x1="1338" y1="380" x2="1370" y2="380"/>
+          <line class="fine" x1="1334" y1="450" x2="1374" y2="450"/>
+          <line class="fine" x1="1330" y1="520" x2="1378" y2="520"/>
+          <line class="fine" x1="1326" y1="590" x2="1382" y2="590"/>
+          <!-- tapered neighbour -->
+          <path d="M1408 690V330l86-26v386z"/>
+          <path d="M1408 330l86-26"/>
+          <line class="fine" x1="1416" y1="400" x2="1492" y2="400"/>
+          <line class="fine" x1="1416" y1="470" x2="1492" y2="470"/>
+          <line class="fine" x1="1416" y1="540" x2="1492" y2="540"/>
+          <line class="fine" x1="1416" y1="610" x2="1492" y2="610"/>
+          <path d="M1436 304l14-26h30l12 26"/>
+        </svg>
+      </div>
 
-      <!-- Bab Makkah gate -->
-      <path d="M508 400v-92h96v92" />
-      <path d="M534 400v-52a22 22 0 0 1 44 0v52" />
-      <path d="M508 308l48-26 48 26" />
-      <line class="fine" x1="508" y1="292" x2="604" y2="292" />
+      <!-- ============ plane 2 · the signature towers ============ -->
+      <div class="plane" data-z="-400">
+        <svg viewBox="0 0 2000 700" preserveAspectRatio="xMidYEnd meet">
+          <!-- the sail: leaning, striped -->
+          <path class="accent" d="M612 690V430c0-90 30-160 74-186v446z"/>
+          <path d="M660 690V266"/>
+          <g class="fine">
+            <path d="M620 500h62M617 540h69M614 580h72M612 620h74M612 660h74"/>
+            <path d="M628 460h58M640 420h46"/>
+          </g>
+          <path d="M686 244h34v40h-34z"/>
 
-      <!-- sloped / stepped tower -->
-      <path d="M640 400V150l108 250z" />
-      <line class="fine" x1="655" y1="360" x2="726" y2="360" />
-      <line class="fine" x1="655" y1="320" x2="708" y2="320" />
-      <line class="fine" x1="652" y1="280" x2="690" y2="280" />
-      <line class="fine" x1="648" y1="240" x2="672" y2="240" />
+          <!-- the twisted tower -->
+          <path d="M744 690V300h68v390z"/>
+          <path d="M744 330c34-22 34 22 68 0M744 380c34-22 34 22 68 0M744 430c34-22 34 22 68 0M744 480c34-22 34 22 68 0M744 530c34-22 34 22 68 0M744 580c34-22 34 22 68 0"/>
+          <path d="M736 300h84l-14-30h-56z"/>
+          <path d="M760 270v-22h36v22"/>
+          <path d="M778 248v-30"/>
+          <path d="M726 690v-40h104v40z"/>
 
-      <!-- latticed tower (open-frame facade) -->
-      <path d="M780 400V96h110v304" />
-      <path d="M796 130h34v56h-34z" />
-      <path d="M842 130h32v92h-32z" />
-      <path d="M796 206h34v78h-34z" />
-      <path d="M842 244h32v52h-32z" />
-      <path d="M796 306h34v58h-34z" />
-      <path d="M842 320h32v44h-32z" />
+          <!-- kandeel: the lamp tower -->
+          <path d="M1196 690V520h52v170z"/>
+          <ellipse cx="1222" cy="470" rx="46" ry="52"/>
+          <path class="fine" d="M1222 418c-24 20-24 84 0 104M1222 418c24 20 24 84 0 104M1176 470h92"/>
+          <path d="M1206 418v-26h32v26z"/>
+          <path d="M1214 392v-24h16v24"/>
+          <path d="M1180 690c0-30 84-30 84 0z"/>
+        </svg>
+      </div>
 
-      <!-- TV tower with its bulb -->
-      <path d="M932 400V236" />
-      <path d="M918 236c0-30 28-30 28 0" />
-      <path d="M918 236h28v26h-28z" />
-      <path d="M932 206V70" />
-      <ellipse cx="932" cy="222" rx="22" ry="12" />
-      <line class="fine" x1="924" y1="400" x2="940" y2="400" />
+      <!-- ============ plane 3 · the old city ============ -->
+      <div class="plane" data-z="-180">
+        <svg viewBox="0 0 2000 700" preserveAspectRatio="xMidYEnd meet">
+          <!-- Al Balad tower house -->
+          <path d="M440 690V400h116v290z"/>
+          <path d="M436 400h124l-10-22h-104z"/>
+          <rect x="468" y="440" width="60" height="52"/>
+          <rect x="468" y="540" width="60" height="52"/>
+          <g class="fine">
+            <path d="M468 458h60M468 476h60M488 440v52M508 440v52"/>
+            <path d="M468 558h60M468 576h60M488 540v52M508 540v52"/>
+          </g>
 
-      <!-- brick-grid bank tower with its void -->
-      <path d="M980 400V132h136v268" />
-      <path d="M1016 172h64v92h-64z" />
-      <line class="fine" x1="980" y1="212" x2="1016" y2="212" />
-      <line class="fine" x1="1080" y1="212" x2="1116" y2="212" />
-      <line class="fine" x1="980" y1="300" x2="1116" y2="300" />
-      <line class="fine" x1="980" y1="344" x2="1116" y2="344" />
-      <path d="M1030 132v-18h36v18" />
+          <!-- the mosque -->
+          <path d="M930 690V560h300v130z"/>
+          <path d="M960 560c0-90 240-90 240 0"/>
+          <path d="M1080 470v-24"/>
+          <path d="M1074 446c0-12 12-12 12 0"/>
+          <g class="fine">
+            <path d="M960 526h240"/>
+            <path d="M950 600h20v90h-20zM990 600h20v90h-20zM1030 600h20v90h-20zM1070 600h20v90h-20zM1110 600h20v90h-20zM1150 600h20v90h-20zM1190 600h20v90h-20z"/>
+          </g>
+          <!-- minaret -->
+          <path d="M1140 560V400h22v160z"/>
+          <path d="M1136 400h30l-6-16h-18z"/>
+          <path d="M1144 384v-20h14v20"/>
+          <path d="M1151 364v-22"/>
+          <line class="fine" x1="1140" y1="450" x2="1162" y2="450"/>
 
-      <!-- the sail: Aqua Tower's sweep -->
-      <path class="accent" d="M1150 400V206c0-70 54-96 84-104v298z" />
-      <line class="fine" x1="1160" y1="340" x2="1230" y2="340" />
-      <line class="fine" x1="1164" y1="290" x2="1230" y2="290" />
-      <line class="fine" x1="1176" y1="240" x2="1230" y2="240" />
+          <!-- Bab Makkah: crenellated walls and gates -->
+          <path d="M1540 690V540h420v150z"/>
+          <path d="M1540 540h420"/>
+          <g class="fine"><path d="M1548 540v-20h20v20M1588 540v-20h20v20M1628 540v-20h20v20M1668 540v-20h20v20M1708 540v-20h20v20M1748 540v-20h20v20M1788 540v-20h20v20M1828 540v-20h20v20M1868 540v-20h20v20M1908 540v-20h20v20M1948 540v-20h12v20"/></g>
+          <path d="M1660 690v-70a34 34 0 0 1 68 0v70"/>
+          <path d="M1780 690v-50a24 24 0 0 1 48 0v50"/>
+          <path d="M1580 690v-50a22 22 0 0 1 44 0v50"/>
+          <path d="M1880 690v-46a22 22 0 0 1 44 0v46"/>
+          <rect x="1600" y="482" width="34" height="58"/>
+          <rect x="1880" y="482" width="34" height="58"/>
+        </svg>
+      </div>
 
-      <!-- terraced block -->
-      <path d="M1270 400V250h96v150" />
-      <path d="M1270 250l48-26 48 26" />
-      <line class="fine" x1="1270" y1="292" x2="1366" y2="292" />
-      <line class="fine" x1="1270" y1="330" x2="1366" y2="330" />
-      <line class="fine" x1="1270" y1="368" x2="1366" y2="368" />
+      <!-- ============ plane 4 · nearest: globe, palms, lamp, flag ============ -->
+      <div class="plane" data-z="0">
+        <svg viewBox="0 0 2000 700" preserveAspectRatio="xMidYEnd meet">
+          <!-- the globe sculpture -->
+          <circle cx="200" cy="560" r="86"/>
+          <g class="fine">
+            <ellipse cx="200" cy="560" rx="86" ry="30"/>
+            <ellipse cx="200" cy="560" rx="86" ry="58"/>
+            <ellipse cx="200" cy="560" rx="34" ry="86"/>
+            <ellipse cx="200" cy="560" rx="64" ry="86"/>
+            <path d="M114 560h172M200 474v172"/>
+          </g>
+          <path d="M120 690l150-96M280 690l-150-96"/>
+          <path d="M186 646h28v44h-28z"/>
+          <path d="M96 690h208"/>
 
-      <!-- second minaret + small domes -->
-      <path d="M1400 400V236h20v164" />
-      <path d="M1396 236h28l-5-14h-18z" />
-      <circle cx="1410" cy="212" r="6" />
-      <path d="M1440 400v-58c0-28 44-28 44 0v58" />
-      <path d="M1496 400v-46c0-22 36-22 36 0v46" />
+          <!-- street lamp -->
+          <path d="M566 690V486"/>
+          <path d="M548 486h36l-8-46h-20z"/>
+          <path d="M552 440h28"/>
+          <path d="M566 434v-18"/>
+          <path d="M552 690h28"/>
 
-      <!-- the sphere -->
-      <path d="M1560 400V300" />
-      <circle cx="1560" cy="262" r="38" />
-      <line class="fine" x1="1522" y1="262" x2="1598" y2="262" />
-      <path class="fine" d="M1560 224c-20 16-20 60 0 76" />
-      <path class="fine" d="M1560 224c20 16 20 60 0 76" />
-      <path d="M1560 224v-18" />
-    </svg>
+          <!-- flag -->
+          <path d="M876 690V450"/>
+          <path d="M876 460h84v52h-84z"/>
+          <path d="M862 690h28"/>
+
+          <!-- palms -->
+          <g>
+            <path d="M330 690v-96"/>
+            <path d="M330 594c-30-26-58-20-70 2 26-6 44 0 70 12M330 594c30-26 58-20 70 2-26-6-44 0-70 12M330 594c-8-34 6-58 30-64-12 22-16 42-30 76M330 594c8-34-6-58-30-64 12 22 16 42 30 76"/>
+            <g class="fine"><path d="M322 640h16M322 664h16"/></g>
+          </g>
+          <g>
+            <path d="M700 690v-80"/>
+            <path d="M700 610c-26-22-50-18-60 2 22-5 38 0 60 10M700 610c26-22 50-18 60 2-22-5-38 0-60 10M700 610c-7-29 5-50 26-55-10 19-14 36-26 65M700 610c7-29-5-50-26-55 10 19 14 36 26 65"/>
+          </g>
+          <g>
+            <path d="M1290 690v-76"/>
+            <path d="M1290 614c-24-20-46-16-56 2 20-5 35 0 56 9M1290 614c24-20 46-16 56 2-20-5-35 0-56 9M1290 614c-6-27 5-46 24-51-9 18-13 33-24 60M1290 614c6-27-5-46-24-51 9 18 13 33 24 60"/>
+          </g>
+          <g>
+            <path d="M1450 690v-70"/>
+            <path d="M1450 620c-22-18-42-15-51 2 18-4 32 0 51 8M1450 620c22-18 42-15 51 2-18-4-32 0-51 8M1450 620c-6-25 4-42 22-47-8 16-12 30-22 55M1450 620c6-25-4-42-22-47 8 16 12 30 22 55"/>
+          </g>
+        </svg>
+      </div>
+
+    </div></div>
 
     <div id="horizon"></div>
 
     <div class="copy">
       <div class="eyebrow">Red Sea &middot; 21.54&deg; N</div>
       <h1 id="title"></h1>
-      <p class="sub">A city drawn from the water &mdash; 5,465 real building footprints, one shoreline, and the tallest fountain on earth.</p>
+      <p class="sub">A city drawn from the water &mdash; then flown through, into 5,465 real buildings on the Corniche.</p>
     </div>
 
     <div class="cue"><i></i>Scroll</div>
 
-    <div class="card" data-card data-in="3.4" data-out="4.6">
+    <div class="card" data-card data-in="4.2" data-out="5.4">
       <div class="tag">Corniche &middot; 01</div>
       <h2>Al Balad</h2>
       <div class="fig"><span data-count="7">0</span><em>&nbsp;centuries</em></div>
       <p>Coral-stone houses and roshan screens, where the Red Sea trade came ashore.</p>
     </div>
-    <div class="card right" data-card data-in="5.0" data-out="6.2">
+    <div class="card right" data-card data-in="5.8" data-out="7.0">
       <div class="tag">Corniche &middot; 02</div>
       <h2>King Fahd's Fountain</h2>
       <div class="fig"><span data-count="312">0</span><em>&nbsp;m</em></div>
-      <p>The tallest fountain in the world, throwing seawater higher than most skyscrapers.</p>
+      <p>The tallest fountain on earth, throwing seawater higher than most skyscrapers.</p>
     </div>
-    <div class="card" data-card data-in="6.6" data-out="7.8">
+    <div class="card" data-card data-in="7.4" data-out="8.6">
       <div class="tag">Corniche &middot; 03</div>
       <h2>Aqua Tower</h2>
       <div class="fig"><span data-count="251">0</span><em>&nbsp;m</em></div>
       <p>The waterfront's tallest, its crown sweeping seaward like a sail.</p>
     </div>
-    <div class="card right" data-card data-in="8.2" data-out="9.6">
+    <div class="card right" data-card data-in="9.0" data-out="10.4">
       <div class="tag">Corniche &middot; 04</div>
       <h2>The Floating Mosque</h2>
       <div class="fig"><span data-count="1985">0</span><em>&nbsp;built</em></div>
-      <p>Al-Rahmah, standing on stilts in the Red Sea and lit against the night.</p>
+      <p>Al-Rahmah, on stilts in the Red Sea, lit against the night.</p>
     </div>
 
     <div id="rail" aria-hidden="true">
@@ -299,12 +345,11 @@ window.addEventListener('load', function () {
   var map = document.getElementById('map');
   var expl = document.getElementById('exploreMap');
 
-  /* headline, split for the stagger */
   var title = document.getElementById('title');
   'JEDDAH'.split('').forEach(function (c) {
     var s = document.createElement('span'); s.className = 'ch'; s.textContent = c; title.appendChild(s);
   });
-  var d = document.createElement('span'); d.className = 'ch dot'; d.textContent = '.'; title.appendChild(d);
+  var dt = document.createElement('span'); dt.className = 'ch dot'; dt.textContent = '.'; title.appendChild(dt);
 
   expl.addEventListener('kfr-ready', function () { expl.setNight(1); }, { once: true });
 
@@ -312,51 +357,88 @@ window.addEventListener('load', function () {
     if (reduced) { map.setInteractive(true); return; }
     gsap.registerPlugin(ScrollTrigger);
 
-    /* every stroke starts undrawn */
-    var strokes = gsap.utils.toArray('#draw > *');
-    strokes.forEach(function (el) {
-      var len = el.getTotalLength ? el.getTotalLength() : 300;
-      el.style.strokeDasharray = len;
-      el.style.strokeDashoffset = len;
+    var planes = gsap.utils.toArray('.plane');
+
+    /* Park each plane at its depth, scaling it back up by exactly the amount
+       perspective shrinks it. The drawing therefore reads as one flat elevation
+       until the camera moves — then the planes separate. */
+    var PERSP = 1200;
+    planes.forEach(function (p) {
+      var z = +p.dataset.z;
+      gsap.set(p, { z: z, scale: (PERSP + Math.abs(z)) / PERSP, transformOrigin: '50% 78%' });
     });
+
+    /* every stroke starts undrawn, far planes first */
+    var strokes = [];
+    planes.forEach(function (p) {
+      gsap.utils.toArray(p.querySelectorAll('path:not(.wash), line, circle, rect, ellipse, polyline')).forEach(function (el) {
+        var len = 400;
+        try { if (el.getTotalLength) len = el.getTotalLength() || 400; } catch (e) {}
+        el.style.strokeDasharray = len;
+        el.style.strokeDashoffset = len;
+        strokes.push(el);
+      });
+    });
+    gsap.set('.wash', { autoAlpha: 0 });
 
     var api = map.api;
     api.setBuild(0);
     api.jump('balad');
-    api.view.elev = 0.30;                    // start low, like an elevation drawing
+    api.view.elev = 0.30;
 
-    var cam = { p: 0 }, build = { b: 0 }, dusk = { n: 0 };
+    /* pointer parallax — the diorama turns slightly with the cursor */
+    var rotY = gsap.quickTo('#dolly', 'rotationY', { duration: 0.9, ease: 'power2.out' });
+    var rotX = gsap.quickTo('#dolly', 'rotationX', { duration: 0.9, ease: 'power2.out' });
+    var parallax = true;
+    window.addEventListener('pointermove', function (e) {
+      if (!parallax) return;
+      rotY((e.clientX / window.innerWidth - 0.5) * 9);
+      rotX((0.5 - e.clientY / window.innerHeight) * 5);
+    });
+
+    var cam = { z: 0 }, p3 = { p: 0 }, build = { b: 0 }, dusk = { n: 0 };
     var dots = gsap.utils.toArray('#rail .dot2');
 
     var tl = gsap.timeline({
       scrollTrigger: {
         trigger: '#act', start: 'top top', end: 'bottom bottom', scrub: 1,
         onUpdate: function (self) {
-          var z = Math.min(3, Math.max(0, Math.floor((self.progress - 0.30) * 5.6)));
-          dots.forEach(function (dt, i) { dt.classList.toggle('on', i === z && self.progress > 0.30); });
+          var z = Math.min(3, Math.max(0, Math.floor((self.progress - 0.34) * 5.2)));
+          dots.forEach(function (d, i) { d.classList.toggle('on', i === z && self.progress > 0.34); });
         }
       },
       defaults: { ease: 'none' }
     });
 
-    /* ACT 1 — the drawing draws itself, left to right */
-    tl.to('#horizon', { scaleX: 1, duration: 0.5, ease: 'power2.inOut' }, 0)
-      .to(strokes, { strokeDashoffset: 0, duration: 1.5, stagger: { each: 0.012, from: 'start' } }, 0.25)
-      .from('#title .ch', { yPercent: 120, duration: 0.7, ease: 'expo.out', stagger: 0.05 }, 0.5)
-      .from('.eyebrow', { autoAlpha: 0, x: -20, duration: 0.4 }, 0.8)
-      .from('.sub', { autoAlpha: 0, y: 20, duration: 0.5 }, 1.1);
+    /* ---- ACT 1 · the drawing draws itself, back to front ---- */
+    tl.to('#horizon', { scaleX: 1, duration: 0.45, ease: 'power2.inOut' }, 0)
+      .to('.wash', { autoAlpha: 1, duration: 0.6 }, 0.15)
+      .to(strokes, { strokeDashoffset: 0, duration: 1.7, stagger: { each: 0.006, from: 'start' } }, 0.2)
+      .from('#title .ch', { yPercent: 130, duration: 0.7, ease: 'expo.out', stagger: 0.05 }, 0.9)
+      .from('.eyebrow', { autoAlpha: 0, x: -20, duration: 0.4 }, 1.2)
+      .from('.sub', { autoAlpha: 0, y: 20, duration: 0.5 }, 1.5);
 
-    /* ACT 2 — the handoff: the drawing dissolves, the real city rises from it */
-    tl.to('#draw', { autoAlpha: 0, scale: 1.12, transformOrigin: '50% 100%', duration: 0.9, ease: 'power2.in' }, 2.1)
-      .to('#horizon', { autoAlpha: 0, duration: 0.5 }, 2.3)
-      .to('#map', { opacity: 1, duration: 0.9 }, 2.15)
-      .to(build, { b: 1.35, duration: 1.3, ease: 'power1.inOut',
-                   onUpdate: function () { api.setBuild(build.b); } }, 2.2)
-      .to('#title .ch', { yPercent: -210, autoAlpha: 0, duration: 0.6, ease: 'power2.in', stagger: 0.03 }, 2.5)
-      .to(['.sub', '.eyebrow', '.cue'], { autoAlpha: 0, duration: 0.4 }, 2.4);
+    /* ---- ACT 2 · fly the camera THROUGH the drawing ---- */
+    tl.to(cam, {
+      z: 760, duration: 2.0, ease: 'power2.in',
+      onUpdate: function () { gsap.set('#dolly', { z: cam.z }); }
+    }, 2.2);
 
-    /* ACT 3 — sail the Corniche */
-    tl.to(cam, { p: 1, duration: 7.2, onUpdate: function () { api.scrub(cam.p); } }, 3.0);
+    /* each plane dissolves as it rushes past the lens, nearest first */
+    planes.slice().reverse().forEach(function (p, i) {
+      tl.to(p, { autoAlpha: 0, duration: 0.5 }, 2.35 + i * 0.30);
+    });
+
+    tl.to('#title .ch', { yPercent: -200, autoAlpha: 0, duration: 0.6, ease: 'power2.in', stagger: 0.03 }, 2.3)
+      .to(['.sub', '.eyebrow', '.cue'], { autoAlpha: 0, duration: 0.4 }, 2.25)
+      .to('#horizon', { autoAlpha: 0, duration: 0.4 }, 2.5)
+      .to('#map', { opacity: 1, duration: 1.0 }, 2.9)
+      .to(build, { b: 1.35, duration: 1.4, ease: 'power1.inOut',
+                   onUpdate: function () { api.setBuild(build.b); } }, 3.0)
+      .add(function () { parallax = false; }, 3.4);
+
+    /* ---- ACT 3 · sail the Corniche ---- */
+    tl.to(p3, { p: 1, duration: 7.4, onUpdate: function () { api.scrub(p3.p); } }, 3.8);
 
     gsap.utils.toArray('[data-card]').forEach(function (card) {
       var tIn = +card.dataset.in, tOut = +card.dataset.out;
@@ -368,19 +450,16 @@ window.addEventListener('load', function () {
                    onUpdate: function () { el.textContent = Math.round(obj.v).toLocaleString('en-US'); } }, tIn + 0.1);
     });
 
-    /* ACT 4 — dusk over the Red Sea */
+    /* ---- ACT 4 · dusk ---- */
     tl.to(dusk, { n: 1, duration: 1.3,
                   onUpdate: function () {
                     api.setNight(dusk.n);
                     document.body.classList.toggle('night', dusk.n > 0.5);
-                  } }, 7.4);
+                  } }, 8.4);
 
     gsap.to('.cue i', { scaleY: 0.3, transformOrigin: 'top', repeat: -1, yoyo: true, duration: 0.9, ease: 'sine.inOut' });
-
-    gsap.from('#explore h2', { autoAlpha: 0, y: 40, duration: 0.7,
-      scrollTrigger: { trigger: '#explore', start: 'top 78%' } });
-    gsap.from('#exploreMap', { autoAlpha: 0, y: 60, duration: 0.8,
-      scrollTrigger: { trigger: '#exploreMap', start: 'top 88%' } });
+    gsap.from('#explore h2', { autoAlpha: 0, y: 40, duration: 0.7, scrollTrigger: { trigger: '#explore', start: 'top 78%' } });
+    gsap.from('#exploreMap', { autoAlpha: 0, y: 60, duration: 0.8, scrollTrigger: { trigger: '#exploreMap', start: 'top 88%' } });
   }
 
   if (map.api) start();
