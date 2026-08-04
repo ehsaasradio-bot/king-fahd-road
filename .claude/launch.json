@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "kfr-site",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8742", "-d", "/Users/haq/KFS/site"],
+      "port": 8742
+    }
+  ]
+}

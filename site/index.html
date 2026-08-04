@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>King Fahd Road — A 3D Portrait of Riyadh's Spine</title>
+<style>
+  :root {
+    --ink: #2E3192;
+    --ink-deep: #1B1E63;
+    --ink-soft: #7A7EC2;
+    --green: #8CC63F;
+    --green-dk: #5c8f28;
+    --paper: #ffffff;
+    --font: var(--font-f-aeonik-pro, "Aeonik Pro", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif);
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: auto; }
+  body {
+    font-family: var(--font);
+    background: var(--paper);
+    color: var(--ink-deep);
+    text-transform: uppercase;
+    overflow-x: hidden;
+  }
+  ::selection { background: var(--green); color: #fff; }
+
+  /* ---------- loader ---------- */
+  #loader {
+    position: fixed; inset: 0; z-index: 50; background: var(--paper);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+  }
+  #loader .l-num { font-size: clamp(56px, 10vw, 120px); letter-spacing: 0.04em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  #loader .l-bar { width: min(300px, 60vw); height: 2px; background: #e3e5f4; position: relative; overflow: hidden; }
+  #loader .l-bar i { position: absolute; inset: 0; background: var(--green); transform: scaleX(0); transform-origin: left; }
+  #loader .l-word { font-size: 10px; letter-spacing: 0.5em; color: var(--ink-soft); }
+
+  /* ---------- scroll story ---------- */
+  #story { height: 640vh; position: relative; }
+  #stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+  #mainMap { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  .hero-copy {
+    position: absolute; inset: 0; z-index: 3; pointer-events: none;
+    display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
+    padding: 0 6vw;
+  }
+  .hero-copy .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.4em; color: var(--green-dk); margin-bottom: 18px; }
+  h1.hl {
+    font-weight: 400; line-height: 0.92; letter-spacing: 0.02em;
+    font-size: clamp(3.2rem, 11vw, 9.5rem); color: var(--ink);
+  }
+  h1.hl .ln { display: block; overflow: hidden; }
+  h1.hl .ch { display: inline-block; will-change: transform; }
+  h1.hl .accent { color: var(--green); }
+  .hero-copy .sub { margin-top: 22px; font-size: clamp(10px, 1.4vw, 13px); letter-spacing: 0.28em; color: var(--ink-soft); max-width: 560px; line-height: 2; }
+  .cue { position: absolute; bottom: 26px; left: 6vw; font-family: var(--mono); font-size: 10px; letter-spacing: 0.4em; color: var(--ink); display: flex; align-items: center; gap: 10px; }
+  .cue i { display: block; width: 1.5px; height: 34px; background: var(--ink); }
+
+  /* chapters */
+  .chapter {
+    position: absolute; z-index: 3; pointer-events: none;
+    left: 6vw; bottom: 12vh; width: min(400px, 82vw);
+    background: rgba(255, 255, 255, 0.32);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    border: 1.5px solid rgba(46, 49, 146, 0.6); border-radius: 4px;
+    box-shadow: 6px 6px 0 rgba(46, 49, 146, 0.08);
+    padding: 22px 24px 20px; opacity: 0; visibility: hidden;
+  }
+  .chapter:nth-child(even) { left: auto; right: 6vw; }
+  .chapter .ch-eyebrow { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.4em; color: var(--green-dk); margin-bottom: 10px; }
+  .chapter h2 { font-weight: 400; font-size: clamp(20px, 3vw, 30px); letter-spacing: 0.06em; color: var(--ink); line-height: 1.05; }
+  .chapter .num { font-family: var(--mono); font-size: clamp(34px, 5vw, 52px); color: var(--ink); margin: 12px 0 2px; font-variant-numeric: tabular-nums; }
+  .chapter .num em { font-style: normal; font-size: 0.45em; color: var(--ink-soft); }
+  .chapter p { font-size: 10.5px; letter-spacing: 0.14em; line-height: 1.9; color: var(--ink-soft); margin-top: 8px; }
+
+  /* progress rail */
+  #rail { position: absolute; right: 26px; top: 50%; transform: translateY(-50%); z-index: 4; display: flex; flex-direction: column; gap: 14px; align-items: center; }
+  #rail .track { width: 1.5px; height: 90px; background: #e3e5f4; position: relative; overflow: hidden; }
+  #rail .track i { position: absolute; inset: 0; background: var(--green); transform: scaleY(0); transform-origin: top; }
+  #rail .dot { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--ink); background: #fff; transition: background 0.3s, transform 0.3s; }
+  #rail .dot.on { background: var(--green); border-color: var(--green-dk); transform: scale(1.35); }
+
+  /* ---------- explore: deep navy, the city at night ---------- */
+  #explore { position: relative; padding: 14vh 6vw 8vh; background: #0B0D2E; }
+  #explore .x-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 5vh; }
+  #explore h2 { font-weight: 400; font-size: clamp(2rem, 6vw, 4.5rem); color: #DFE2FF; letter-spacing: 0.03em; }
+  #explore h2 span { color: var(--green); }
+  #explore .x-note { font-family: var(--mono); font-size: 10px; letter-spacing: 0.3em; color: #7A80CF; }
+  #exploreMap { display: block; height: 82vh; border: 1.5px solid #7A80D8; border-radius: 5px; box-shadow: 8px 8px 0 rgba(4, 6, 30, 0.55); }
+
+  footer { padding: 6vh 6vw 7vh; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-top: 1.5px solid #23265C; background: #0B0D2E; }
+  footer, footer a { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.24em; color: #7A80CF; text-decoration: none; }
+  footer a { color: #C9CDFF; border-bottom: 1px dotted #C9CDFF; }
+
+  /* night mode: the map flips itself; this flips the page chrome */
+  body { transition: background 0.5s; }
+  .chapter { transition: background 0.4s, border-color 0.4s; }
+  body.night { background: #0B0D2E; }
+  body.night .chapter {
+    background: rgba(19, 22, 74, 0.25); border-color: rgba(122, 128, 216, 0.55);
+    box-shadow: 6px 6px 0 rgba(4, 6, 30, 0.3);
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+  }
+  body.night .chapter h2 { color: #DFE2FF; }
+  body.night .chapter .num { color: var(--green); }
+  body.night .chapter .num em { color: #7A80CF; }
+  body.night .chapter p { color: #8A8FD8; }
+  body.night .chapter .ch-eyebrow { color: #A5D95E; }
+  body.night #rail .dot { border-color: #7A80D8; background: #13164A; }
+  body.night #rail .dot.on { background: var(--green); }
+  body.night #rail .track { background: #2C2F6E; }
+
+  /* reduced motion: flat document, no theatrics */
+  @media (prefers-reduced-motion: reduce) {
+    #loader { display: none; }
+    #story { height: auto; }
+    #stage { position: relative; }
+    .chapter { position: static; opacity: 1; visibility: visible; margin: 20px 6vw; pointer-events: auto; }
+    #rail, .cue { display: none; }
+  }
+  @media (max-width: 700px) {
+    .chapter { bottom: 9vh; }
+    #rail { right: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loader" aria-hidden="true">
+  <div class="l-num">0</div>
+  <div class="l-bar"><i></i></div>
+  <div class="l-word">Drawing Riyadh</div>
+</div>
+
+<div id="story">
+  <div id="stage">
+    <kfr-map id="mainMap" sidebar="off" interactive="off" view="faisaliah"></kfr-map>
+
+    <div class="hero-copy">
+      <div class="eyebrow">Riyadh &middot; 24.71&deg; N, 46.67&deg; E</div>
+      <h1 class="hl">
+        <span class="ln" data-split>King Fahd</span>
+        <span class="ln accent" data-split>Road</span>
+      </h1>
+      <p class="sub">One artery &middot; 3,439 real buildings &middot; drawn live in your browser from OpenStreetMap data</p>
+    </div>
+    <div class="cue"><i></i>Scroll</div>
+
+    <div class="chapter" id="ch0">
+      <div class="ch-eyebrow">Chapter 01 &middot; South Gate</div>
+      <h2>Al Faisaliyah</h2>
+      <div class="num"><span data-count="267">0</span><em>&nbsp;m</em></div>
+      <p>The kingdom's first skyscraper &mdash; a pure pyramid holding a golden sphere above the Olaya skyline.</p>
+    </div>
+    <div class="chapter" id="ch1">
+      <div class="ch-eyebrow">Chapter 02 &middot; The Icon</div>
+      <h2>Kingdom Centre</h2>
+      <div class="num"><span data-count="302">0</span><em>&nbsp;m</em></div>
+      <p>The inverted parabolic arch &mdash; a skybridge with the city threaded through its void.</p>
+    </div>
+    <div class="chapter" id="ch2">
+      <div class="ch-eyebrow">Chapter 03 &middot; The Spine</div>
+      <h2>Olaya Corridor</h2>
+      <div class="num"><span data-count="3439">0</span><em>&nbsp;bldgs</em></div>
+      <p>Eleven kilometres of banks, ministries and malls stitched to one road &mdash; every footprint real.</p>
+    </div>
+    <div class="chapter" id="ch3">
+      <div class="ch-eyebrow">Chapter 04 &middot; North Terminus</div>
+      <h2>KAFD</h2>
+      <div class="num"><span data-count="385">0</span><em>&nbsp;m</em></div>
+      <p>A crystal district crowned by PIF Tower &mdash; the financial future at the road's northern end.</p>
+    </div>
+
+    <div id="rail" aria-hidden="true">
+      <div class="dot" data-d="0"></div>
+      <div class="dot" data-d="1"></div>
+      <div class="dot" data-d="2"></div>
+      <div class="dot" data-d="3"></div>
+      <div class="track"><i></i></div>
+    </div>
+  </div>
+</div>
+
+<section id="explore">
+  <div class="x-head">
+    <h2>Now <span>you</span> drive</h2>
+    <div class="x-note">Drag &middot; scroll &middot; hover &middot; fly to any landmark</div>
+  </div>
+  <kfr-map id="exploreMap"></kfr-map>
+</section>
+
+<footer>
+  <span>King Fahd Road &middot; a 3D portrait</span>
+  <span>data <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">&copy; OpenStreetMap contributors</a> &middot; heights estimated where untagged</span>
+</footer>
+
+<script src="kfr-map.js"></script>
+<script src="gsap.min.js"></script>
+<script src="ScrollTrigger.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var mainMap = document.getElementById('mainMap');
+
+  /* split headline lines into chars */
+  document.querySelectorAll('[data-split]').forEach(function (ln) {
+    var text = ln.textContent;
+    ln.textContent = '';
+    text.split('').forEach(function (c) {
+      var s = document.createElement('span');
+      s.className = 'ch';
+      s.innerHTML = c === ' ' ? '&nbsp;' : c;
+      ln.appendChild(s);
+    });
+  });
+
+  if (reduced) {
+    document.querySelectorAll('kfr-map').forEach(function (el) {
+      var relax = function () {
+        el.setInteractive(true);
+        if (el.id === 'exploreMap') { el.showSidebar(true); el.setNight(1); }
+      };
+      if (el.api) relax(); else el.addEventListener('kfr-ready', relax, { once: true });
+    });
+    return;
+  }
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  function startShow() {
+    var api = mainMap.api;
+    var introPlaying = true;
+
+    api.jump('faisaliah');
+    api.setBuild(0);          // quick, subtle rise inside the hero frame — no plan flight
+
+    var loadObj = { v: 0 }, buildObj = { b: 0 };
+    var intro = gsap.timeline({ onComplete: function () { introPlaying = false; } });
+    intro
+      .to('#loader .l-bar i', { scaleX: 1, duration: 0.9, ease: 'power2.inOut' }, 0)
+      .to(loadObj, {
+        v: 100, duration: 0.9, ease: 'power2.inOut',
+        onUpdate: function () { document.querySelector('#loader .l-num').textContent = Math.round(loadObj.v); }
+      }, 0)
+      .to('#loader', { yPercent: -100, duration: 0.7, ease: 'power4.inOut' }, 1.0)
+      .set('#loader', { display: 'none' })
+      .to(buildObj, {
+        b: 1.35, duration: 1.7, ease: 'power1.inOut',
+        onUpdate: function () { api.setBuild(buildObj.b); }
+      }, 1.05)
+      .from('h1.hl .ch', { yPercent: 115, duration: 0.9, ease: 'expo.out', stagger: 0.035 }, 1.35)
+      .from('.hero-copy .eyebrow', { autoAlpha: 0, y: 14, duration: 0.5 }, 1.6)
+      .from('.hero-copy .sub', { autoAlpha: 0, y: 18, duration: 0.6 }, 1.8)
+      .from('.cue', { autoAlpha: 0, duration: 0.5 }, 2.1);
+
+    gsap.to('.cue i', { scaleY: 0.25, transformOrigin: 'top', repeat: -1, yoyo: true, duration: 0.9, ease: 'sine.inOut' });
+
+    /* the story: one scrubbed timeline drives camera + chapters + rail */
+    var cam = { p: 0 };
+    var dots = document.querySelectorAll('#rail .dot');
+    var tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: '#story', start: 'top top', end: 'bottom bottom', scrub: 1,
+        onUpdate: function (self) {
+          if (self.progress > 0.003 && introPlaying) {
+            intro.progress(1);          // scrolling skips the intro cleanly
+            introPlaying = false;
+          }
+          var zone = Math.min(3, Math.floor(self.progress * 4.35));
+          dots.forEach(function (d, i) { d.classList.toggle('on', i === zone); });
+          gsap.set('#rail .track i', { scaleY: self.progress });
+        }
+      },
+      defaults: { ease: 'power2.out' }
+    });
+
+    /* camera path 0 → 1 across the full scroll, linear */
+    tl.to(cam, {
+      p: 1, duration: 10, ease: 'none',
+      onUpdate: function () {
+        if (introPlaying && cam.p === 0) return;   // let the intro own the camera until scroll
+        mainMap.scrub(cam.p);
+      }
+    }, 0);
+
+    /* dusk falls gradually through the Olaya chapter, complete as KAFD arrives */
+    var nightObj = { n: 0 };
+    tl.to(nightObj, {
+      n: 1, duration: 1.4, ease: 'none',
+      onUpdate: function () {
+        mainMap.api.setNight(nightObj.n);
+        document.body.classList.toggle('night', nightObj.n > 0.5);
+      }
+    }, 5.8);
+
+    /* hero exits */
+    tl.to('.hero-copy', { autoAlpha: 0, y: -60, duration: 0.7, ease: 'power2.in' }, 0.15)
+      .to('.cue', { autoAlpha: 0, duration: 0.3 }, 0.15);
+
+    /* chapters: in-hold-out windows along the same timeline */
+    function chapter(sel, tIn, tOut, count, target) {
+      tl.fromTo(sel, { autoAlpha: 0, y: 70 }, { autoAlpha: 1, y: 0, duration: 0.55 }, tIn)
+        .to(sel, { autoAlpha: 0, y: -50, duration: 0.5, ease: 'power2.in' }, tOut);
+      if (count) {
+        var obj = { v: 0 }, el = document.querySelector(sel + ' [data-count]');
+        tl.to(obj, {
+          v: target, duration: 0.9, ease: 'none',
+          onUpdate: function () { el.textContent = Math.round(obj.v).toLocaleString('en-US'); }
+        }, tIn + 0.1);
+      }
+    }
+    chapter('#ch0', 0.9, 2.3, true, 267);
+    chapter('#ch1', 3.0, 4.4, true, 302);
+    chapter('#ch2', 5.1, 6.5, true, 3439);
+    chapter('#ch3', 7.2, 9.3, true, 385);
+
+    /* explore section reveal */
+    gsap.from('#explore .x-head', {
+      autoAlpha: 0, y: 50, duration: 0.8,
+      scrollTrigger: { trigger: '#explore', start: 'top 75%' }
+    });
+    gsap.from('#exploreMap', {
+      autoAlpha: 0, y: 70, duration: 0.9,
+      scrollTrigger: { trigger: '#exploreMap', start: 'top 85%' }
+    });
+  }
+
+  var pending = 2;
+  document.querySelectorAll('kfr-map').forEach(function (el) {
+    var done = function () {
+      if (el.id === 'exploreMap') { el.showSidebar(true); el.jump('kingdom'); el.setNight(1); }
+      pending -= 1;
+      if (pending === 0) startShow();
+    };
+    if (el.api) done();                                    // upgraded before this script ran
+    else el.addEventListener('kfr-ready', done, { once: true });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+node_modules/
+.next/
+.DS_Store
+*.log
+.wrangler/
+kfr3d/*.zip
