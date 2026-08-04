@@ -39,6 +39,20 @@ Self-hosting instead? Drop `site/kfr-map.js` into your own project and point the
 theming and the GSAP scroll-story pattern, or
 [`kfr3d/nextjs/README-nextjs.md`](kfr3d/nextjs/README-nextjs.md) for React/Next.js.
 
+## More than one city
+
+Each city ships as its own element, built by the same pipeline from its own
+OpenStreetMap extract — load only the ones a page needs:
+
+| Element | City | Spine |
+|---|---|---|
+| `<kfr-map>` | Riyadh | King Fahd Road |
+| `<jeddah-map>` | Jeddah | Corniche Road, on the Red Sea |
+
+Scenes carry their own camera presets and scrub path, so the same component code
+drives any of them. [`examples/cities-of-ksa.html`](examples/cities-of-ksa.html)
+is a multi-city scroll page wiring both together.
+
 See `kfr3d/README.md` for attributes (`view`, `sidebar`, `interactive`, `orbit`) and the
 JS API (`flyTo`, `scrub`, `setNight`, `setBuild`, `landmarks`).
 

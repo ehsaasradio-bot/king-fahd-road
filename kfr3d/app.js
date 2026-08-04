@@ -564,12 +564,96 @@ function emitPIF(b) {
   pushTriN(T[0][0], T[0][1], T[0][2], T[2][0], T[2][1], T[2][2], T[3][0], T[3][1], T[3][2], C.lmWallA, C.lmWallB, WHITE);
 }
 
+/* ---- Jeddah signatures ---- */
+
+/* Aqua Tower: slender glass shaft whose crown sweeps out like a sail */
+function emitAqua(b) {
+  var o = obbOf(b.o), H = b.h;
+  var su = Math.max(11, o.hu), sv = Math.max(8, o.hv);
+  var N = 18, rings = [], i, k;
+  for (i = 0; i <= N; i++) {
+    var t = i / N;
+    var taper = 1 - 0.16 * t;
+    var crown = t > 0.80 ? Math.pow((t - 0.80) / 0.20, 1.5) : 0;
+    var fu = taper * (1 - 0.72 * crown);
+    var fv = taper * (1 - 0.40 * crown);
+    var lean = crown * su * 0.6;                 // the sail leans seaward
+    var loc = [[su * fu + lean, sv * fv], [su * fu + lean, -sv * fv],
+               [-su * fu + lean, -sv * fv], [-su * fu + lean, sv * fv]];
+    var cs = [];
+    for (k = 0; k < 4; k++) {
+      cs.push([o.cx + loc[k][0] * o.ux + loc[k][1] * o.vx, t * H,
+               o.cz + loc[k][0] * o.uz + loc[k][1] * o.vz]);
+    }
+    rings.push(cs);
+  }
+  for (i = 0; i < N; i++) {
+    for (k = 0; k < 4; k++) {
+      var p1 = rings[i][k], p2 = rings[i][(k + 1) % 4];
+      var q2 = rings[i + 1][(k + 1) % 4], q1 = rings[i + 1][k];
+      pushTriN(p1[0], p1[1], p1[2], p2[0], p2[1], p2[2], q2[0], q2[1], q2[2], C.lmWallA, C.lmWallB, WHITE);
+      pushTriN(p1[0], p1[1], p1[2], q2[0], q2[1], q2[2], q1[0], q1[1], q1[2], C.lmWallA, C.lmWallB, WHITE);
+    }
+  }
+  var T = rings[N];
+  pushTriN(T[0][0], T[0][1], T[0][2], T[1][0], T[1][1], T[1][2], T[2][0], T[2][1], T[2][2], C.lmWallA, C.lmWallB, WHITE);
+  pushTriN(T[0][0], T[0][1], T[0][2], T[2][0], T[2][1], T[2][2], T[3][0], T[3][1], T[3][2], C.lmWallA, C.lmWallB, WHITE);
+  for (k = 0; k < 4; k++) {
+    for (i = 0; i < N; i++) {
+      edgeMain.push(rings[i][k][0], rings[i][k][1], rings[i][k][2],
+                    rings[i + 1][k][0], rings[i + 1][k][1], rings[i + 1][k][2]);
+    }
+    edgeMain.push(T[k][0], T[k][1], T[k][2], T[(k + 1) % 4][0], T[(k + 1) % 4][1], T[(k + 1) % 4][2]);
+    var b1 = rings[0][k], b2 = rings[0][(k + 1) % 4];
+    edgeMain.push(b1[0], 0, b1[2], b2[0], 0, b2[2]);
+  }
+  for (var yy = 7; yy < H * 0.98; yy += 7) {     // floor banding follows the sweep
+    var tg = yy / H;
+    var idx = Math.min(N, Math.round(tg * N));
+    var rg = rings[idx];
+    for (k = 0; k < 4; k++) {
+      gridLines.push(rg[k][0], yy, rg[k][2], rg[(k + 1) % 4][0], yy, rg[(k + 1) % 4][2]);
+    }
+  }
+}
+
+/* Al-Rahmah / Island Mosque: arcaded base on the water, dome + minaret */
+function emitFloatingMosque(b) {
+  var o = obbOf(b.o);
+  var base = 10;
+  emitPrism({ o: b.o, i: b.i, h: base, c: 'mq', n: b.n });
+  var r = Math.max(7, Math.min(o.hu, o.hv) * 0.8);
+  var M = new THREE.Matrix4();
+
+  // main dome
+  M.makeTranslation(o.cx, base, o.cz);
+  bakeGeo(new THREE.SphereGeometry(r, 18, 9, 0, Math.PI * 2, 0, Math.PI / 2),
+          M, C.mqWallA, C.mqWallB, MQ_ROOF, 24);
+  // finial
+  edgeMain.push(o.cx, base + r, o.cz, o.cx, base + r * 1.35, o.cz);
+
+  // minaret at one corner, with its own cap
+  var mu = o.hu * 0.72, mv = o.hv * 0.62;
+  var mx = o.cx + mu * o.ux + mv * o.vx, mz = o.cz + mu * o.uz + mv * o.vz;
+  var mh = Math.max(34, r * 4.2);
+  M.makeTranslation(mx, mh / 2, mz);
+  bakeGeo(new THREE.CylinderGeometry(1.5, 2.2, mh, 10), M, C.mqWallA, C.mqWallB, MQ_ROOF, 30);
+  M.makeTranslation(mx, mh, mz);
+  bakeGeo(new THREE.SphereGeometry(2.6, 10, 5, 0, Math.PI * 2, 0, Math.PI / 2),
+          M, C.mqWallA, C.mqWallB, MQ_ROOF, 0);
+  edgeMain.push(mx, mh + 2.6, mz, mx, mh + 6, mz);
+}
+
 var CUSTOM = {
   'Kingdom Centre': emitKingdom,
   'Al Faisaliyah Tower': emitFaisaliyah,
   'Al Majdoul Tower': emitMajdoul,
   'PIF Tower': emitPIF,
-  'Tadawul Tower': emitTadawul
+  'Tadawul Tower': emitTadawul,
+  'Aqua Tower': emitAqua,
+  'Island Mosque': emitFloatingMosque,
+  'Al-Rahmah Mosque': emitFloatingMosque,
+  'Al Rahmah Mosque': emitFloatingMosque
 };
 
 function flatCentroid(flat) {
@@ -594,10 +678,16 @@ function isKafdCrystal(b) {
   return dx * dx + dz * dz < 650 * 650;
 }
 
+/* landmarks that are short by nature — the height gate must not skip them */
+var CUSTOM_ANY_HEIGHT = {
+  'Island Mosque': 1, 'Al-Rahmah Mosque': 1, 'Al Rahmah Mosque': 1
+};
+
 function buildBuilding(b, idx) {
   var vStart = fillPos.length;
   var eS = edgeMain.length, sS = edgeSoft.length, gS = gridLines.length;
-  var custom = (b.n && b.h > 80 && CUSTOM[b.n]) || null;
+  var custom = null;
+  if (b.n && CUSTOM[b.n] && (b.h > 80 || CUSTOM_ANY_HEIGHT[b.n])) custom = CUSTOM[b.n];
   var crystal = !custom && isKafdCrystal(b);
   if (custom) custom(b);
   else if (crystal) emitCrystal(b);
@@ -726,6 +816,96 @@ dashGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(dashCol
 var dashMesh = new THREE.Mesh(dashGeo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.8 }));
 dashMesh.frustumCulled = false;
 scene.add(dashMesh);
+
+/* ---------- water: sea and lagoons (coastal scenes) ---------- */
+var waterMat = null;
+(function () {
+  if (!DATA.water || !DATA.water.length) return;
+  var pos = [], outline = [];
+  for (var w = 0; w < DATA.water.length; w++) {
+    var flat = DATA.water[w], pts = [];
+    for (var i = 0; i < flat.length; i += 2) pts.push(new V2(flat[i], flat[i + 1]));
+    if (pts.length < 3) continue;
+    var tris;
+    try { tris = THREE.ShapeUtils.triangulateShape(pts, []); }
+    catch (e) { tris = []; }
+    for (var t = 0; t < tris.length; t++) {
+      var a = pts[tris[t][0]], b = pts[tris[t][1]], c = pts[tris[t][2]];
+      pos.push(a.x, -0.25, a.y, b.x, -0.25, b.y, c.x, -0.25, c.y);
+    }
+    for (var k = 0; k < pts.length; k++) {
+      var p = pts[k], q = pts[(k + 1) % pts.length];
+      outline.push(p.x, -0.2, p.y, q.x, -0.2, q.y);
+    }
+  }
+  if (!pos.length) return;
+  var g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  /* DoubleSide: the shore ring's winding depends on the source data, so half the
+     polygons would otherwise be back-facing and cull away */
+  waterMat = new THREE.MeshBasicMaterial({ color: 0xC2DEEC, side: THREE.DoubleSide });
+  injectNight(waterMat, 'vec3(0.035,0.065,0.20)');
+  var mesh = new THREE.Mesh(g, waterMat);
+  mesh.frustumCulled = false;
+  mesh.renderOrder = -2;
+  scene.add(mesh);
+  lineSeg(outline, C.inkSoft, 0.5);   // inked shoreline
+})();
+
+/* ---------- point features: King Fahd's Fountain ---------- */
+(function () {
+  if (!DATA.features || !DATA.features.length) return;
+  var jetMat = new THREE.MeshBasicMaterial({ color: 0xEAF3F8, transparent: true, opacity: 0.9 });
+  injectNight(jetMat, 'vec3(0.72,0.86,0.42)');          // the jet is floodlit at night
+  var plumeMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.95 });
+  injectNight(plumeMat, 'vec3(0.80,0.92,0.52)');
+  var M = new THREE.Matrix4();
+
+  for (var i = 0; i < DATA.features.length; i++) {
+    var f = DATA.features[i];
+    if (f.t !== 'fountain') continue;
+    var H = f.h || 260;
+
+    // basin ring sitting on the water
+    M.makeTranslation(f.x, 1.2, f.z);
+    bakeGeo(new THREE.CylinderGeometry(30, 34, 2.4, 24), M,
+            C.wallA, C.wallB, WHITE, 0);
+
+    // the column of water, narrow at the nozzle and spreading as it rises
+    var col = new THREE.CylinderGeometry(11, 3.2, H * 0.9, 14, 1, true);
+    M.makeTranslation(f.x, 2.4 + H * 0.45, f.z);
+    var g2 = col.toNonIndexed();
+    g2.applyMatrix4(M);
+    var P = g2.getAttribute('position').array;
+    var jpos = [];
+    for (var j = 0; j < P.length; j++) jpos.push(P[j]);
+    var jg = new THREE.BufferGeometry();
+    jg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(jpos), 3));
+    var jet = new THREE.Mesh(jg, jetMat);
+    jet.frustumCulled = false;
+    scene.add(jet);
+
+    // plume at the crest
+    var pg = new THREE.IcosahedronGeometry(15, 1);
+    M.makeScale(1, 0.62, 1);
+    M.setPosition(f.x, 2.4 + H * 0.93, f.z);
+    var pgeo = pg.toNonIndexed();
+    pgeo.applyMatrix4(M);
+    var plume = new THREE.Mesh(pgeo, plumeMat);
+    plume.frustumCulled = false;
+    scene.add(plume);
+
+    // falling spray, drawn as line art
+    for (var s = 0; s < 14; s++) {
+      var a = s / 14 * Math.PI * 2;
+      var rr = 16 + (s % 3) * 7;
+      edgeSoft.push(f.x + Math.cos(a) * 4, 2.4 + H * 0.9, f.z + Math.sin(a) * 4,
+                    f.x + Math.cos(a) * rr, 2.4 + H * 0.42, f.z + Math.sin(a) * rr);
+    }
+    // the mast line, so it reads at any zoom
+    edgeMain.push(f.x, 2.4, f.z, f.x, 2.4 + H * 0.9, f.z);
+  }
+})();
 
 /* ---------- trees along King Fahd Rd ---------- */
 (function () {
@@ -1086,12 +1266,33 @@ var extent = (function () {
   return { cx: (minx + maxx) / 2, cz: (minz + maxz) / 2, h: maxz - minz };
 })();
 
-var PRESETS = {
-  overview: function () { return { tx: extent.cx, tz: extent.cz, azim: -0.65, elev: 0.9, size: extent.h * 1.02 }; },
-  kingdom: (function () { var m = findByName('Kingdom Centre'); return m && function () { return { tx: m.x, tz: m.z, azim: -0.75, elev: 0.5, size: 950 }; }; })(),
-  kafd: (function () { var m = findByName('PIF Tower'); return m && function () { return { tx: m.x, tz: m.z - 150, azim: -0.45, elev: 0.52, size: 1750 }; }; })(),
-  faisaliah: (function () { var m = findByName('Al Faisaliyah Tower'); return m && function () { return { tx: m.x, tz: m.z, azim: -0.85, elev: 0.5, size: 950 }; }; })()
-};
+var PRESETS;
+if (DATA.presets) {
+  /* scene ships its own views (any city) — build the chips to match */
+  PRESETS = {};
+  var chipWrap = document.querySelector('.chips');
+  if (chipWrap) chipWrap.innerHTML = '';
+  Object.keys(DATA.presets).forEach(function (key, i) {
+    var p = DATA.presets[key];
+    PRESETS[key] = function () {
+      return { tx: p.tx, tz: p.tz, azim: p.azim, elev: p.elev, size: p.size };
+    };
+    if (chipWrap) {
+      var btn = document.createElement('button');
+      btn.setAttribute('data-view', key);
+      btn.textContent = p.label || key;
+      if (i === 1 || (i === 0 && Object.keys(DATA.presets).length === 1)) btn.classList.add('on');
+      chipWrap.appendChild(btn);
+    }
+  });
+} else {
+  PRESETS = {
+    overview: function () { return { tx: extent.cx, tz: extent.cz, azim: -0.65, elev: 0.9, size: extent.h * 1.02 }; },
+    kingdom: (function () { var m = findByName('Kingdom Centre'); return m && function () { return { tx: m.x, tz: m.z, azim: -0.75, elev: 0.5, size: 950 }; }; })(),
+    kafd: (function () { var m = findByName('PIF Tower'); return m && function () { return { tx: m.x, tz: m.z - 150, azim: -0.45, elev: 0.52, size: 1750 }; }; })(),
+    faisaliah: (function () { var m = findByName('Al Faisaliyah Tower'); return m && function () { return { tx: m.x, tz: m.z, azim: -0.85, elev: 0.5, size: 950 }; }; })()
+  };
+}
 document.querySelectorAll('[data-view]').forEach(function (btn) {
   var fn = PRESETS[btn.getAttribute('data-view')];
   if (!fn) { btn.style.display = 'none'; return; }
@@ -1135,8 +1336,15 @@ function setSide(open) {
 sideBtn.addEventListener('click', function () { setSide(sideEl.classList.contains('closed')); });
 if (window.matchMedia('(max-width: 700px)').matches) setSide(false);
 
-/* start view: Kingdom Centre stretch, wide-ish */
+/* start view: the scene's signature stretch */
 (function () {
+  if (DATA.presets) {
+    var keys = Object.keys(DATA.presets);
+    var p = DATA.presets[keys[1]] || DATA.presets[keys[0]];
+    view.tx = p.tx; view.tz = p.tz;
+    view.azim = p.azim; view.elev = p.elev; view.size = p.size;
+    return;
+  }
   var k = findByName('Kingdom Centre');
   if (k) { view.tx = k.x; view.tz = k.z + 150; }
   view.size = 2100;
@@ -1144,6 +1352,7 @@ if (window.matchMedia('(max-width: 700px)').matches) setSide(false);
 
 /* ---------- camera path for scroll-scrubbing (south → north) ---------- */
 var pathAnchors = (function () {
+  if (DATA.anchors && DATA.anchors.length >= 2) return DATA.anchors;
   var stops = [
     ['Al Faisaliyah Tower', { azim: -0.85, elev: 0.5, size: 900, dz: 0 }],
     ['Kingdom Centre',      { azim: -0.6,  elev: 0.56, size: 1000, dz: 0 }],
