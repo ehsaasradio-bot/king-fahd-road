@@ -23,10 +23,21 @@ navy-on-white line-art style.
 
 ## Embed it anywhere
 
+Copy these two lines into any website — no build step, no install, no hosting needed.
+The component is served from jsDelivr's global CDN straight off this repo's `v1.0.0` tag:
+
 ```html
-<script src="https://<your-pages-domain>/kfr-map.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/ehsaasradio-bot/king-fahd-road@v1.0.0/site/kfr-map.js" defer></script>
 <kfr-map style="display:block;height:80vh"></kfr-map>
 ```
+
+Pin to a tag (`@v1.0.0`) so a future change here can never alter a live site.
+Use `@main` only if you *want* every site to track the latest build.
+
+Self-hosting instead? Drop `site/kfr-map.js` into your own project and point the
+`src` at it. See [`kfr3d/README.md`](kfr3d/README.md) for attributes, the JS API,
+theming and the GSAP scroll-story pattern, or
+[`kfr3d/nextjs/README-nextjs.md`](kfr3d/nextjs/README-nextjs.md) for React/Next.js.
 
 See `kfr3d/README.md` for attributes (`view`, `sidebar`, `interactive`, `orbit`) and the
 JS API (`flyTo`, `scrub`, `setNight`, `setBuild`, `landmarks`).
