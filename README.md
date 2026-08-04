@@ -37,9 +37,12 @@ JS API (`flyTo`, `scrub`, `setNight`, `setBuild`, `landmarks`).
 python3 -m http.server 8742 -d site
 ```
 
-## Data & licensing
+## Licence
+
+The code in this repository is [MIT licensed](LICENSE).
 
 Building footprints and roads: **© OpenStreetMap contributors**, licensed
 [ODbL](https://www.openstreetmap.org/copyright). Heights come from OSM tags where present
 and are estimated elsewhere (marked `≈` in the UI). The credit is rendered by the component
-itself — keep it visible in any deployment. Bundles three.js (MIT) and GSAP (standard license).
+itself — keep it visible in any deployment. Also bundles three.js (MIT) and, on the story
+pages only, GSAP (standard GreenSock licence). See [LICENSE](LICENSE) for the full breakdown.
