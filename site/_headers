@@ -1,13 +1,7 @@
+# Cloudflare Pages already sets long-lived immutable caching on static assets.
+# We only need to add cross-origin access so kfr-map.js can be embedded from
+# other domains, plus an explicit JS content type.
+
 /kfr-map.js
   Access-Control-Allow-Origin: *
-  Cache-Control: public, max-age=31536000, immutable
   Content-Type: application/javascript; charset=utf-8
-
-/*.js
-  Cache-Control: public, max-age=31536000, immutable
-
-/
-  Cache-Control: public, max-age=0, must-revalidate
-
-/map/
-  Cache-Control: public, max-age=0, must-revalidate
