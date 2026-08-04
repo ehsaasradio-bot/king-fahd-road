@@ -45,4 +45,4 @@ Building footprints and roads: **© OpenStreetMap contributors**, licensed
 [ODbL](https://www.openstreetmap.org/copyright). Heights come from OSM tags where present
 and are estimated elsewhere (marked `≈` in the UI). The credit is rendered by the component
 itself — keep it visible in any deployment. Also bundles three.js (MIT) and, on the story
-pages only, GSAP (standard GreenSock licence). See [LICENSE](LICENSE) for the full breakdown.
+pages only, GSAP (standard GreenSock licence). See [NOTICE](NOTICE) for the full breakdown.

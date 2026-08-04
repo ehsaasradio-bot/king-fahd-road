@@ -1,0 +1,36 @@
+King Fahd Road · Riyadh — 3D line-art map
+Copyright (c) 2026 haq — MIT licensed (see LICENSE)
+
+This project includes third-party data and software that retain their own terms.
+
+--------------------------------------------------------------------------------
+Map data — OpenStreetMap
+--------------------------------------------------------------------------------
+Building footprints and road geometry are derived from OpenStreetMap.
+
+    © OpenStreetMap contributors
+    Open Database License (ODbL) v1.0
+    https://www.openstreetmap.org/copyright
+
+Attribution must remain visible in any deployment or derivative work. The
+<kfr-map> component renders this credit itself; do not remove it.
+
+Building heights come from OSM tags where present and are estimated otherwise
+(shown with a "≈" prefix in the interface). Estimated values are not survey data.
+
+--------------------------------------------------------------------------------
+three.js
+--------------------------------------------------------------------------------
+    Copyright (c) 2010-2024 three.js authors
+    MIT License — https://github.com/mrdoob/three.js/blob/dev/LICENSE
+
+Bundled into site/kfr-map.js and served as site/map/three.min.js.
+
+--------------------------------------------------------------------------------
+GSAP (GreenSock Animation Platform)
+--------------------------------------------------------------------------------
+    © GreenSock, Inc.
+    Standard GreenSock License — https://gsap.com/community/standard-license/
+
+Used only by the scroll-story pages (site/index.html, kfr3d/kfr-landing.html,
+and the Next.js RiyadhStory component). Not bundled into kfr-map.js.
