@@ -1,7 +1,19 @@
 # Cloudflare Pages already sets long-lived immutable caching on static assets.
-# We only need to add cross-origin access so kfr-map.js can be embedded from
-# other domains, plus an explicit JS content type.
+# We only need to add cross-origin access so the map components can be embedded
+# from other domains, plus an explicit JS content type.
 
 /kfr-map.js
+  Access-Control-Allow-Origin: *
+  Content-Type: application/javascript; charset=utf-8
+
+/jeddah-map.js
+  Access-Control-Allow-Origin: *
+  Content-Type: application/javascript; charset=utf-8
+
+/dammam-map.js
+  Access-Control-Allow-Origin: *
+  Content-Type: application/javascript; charset=utf-8
+
+/makkah-map.js
   Access-Control-Allow-Origin: *
   Content-Type: application/javascript; charset=utf-8
