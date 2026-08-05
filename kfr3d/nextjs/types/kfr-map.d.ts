@@ -38,19 +38,23 @@ type KfrMapJSX = React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTML
   orbit?: '' | boolean;
 };
 
+/* one element per city, all sharing the same API surface */
+interface CityElements {
+  'kfr-map': KfrMapJSX;
+  'jeddah-map': KfrMapJSX;
+  'dammam-map': KfrMapJSX;
+  'makkah-map': KfrMapJSX;
+}
+
 declare global {
   namespace JSX {
-    interface IntrinsicElements {
-      'kfr-map': KfrMapJSX;
-    }
+    interface IntrinsicElements extends CityElements {}
   }
 }
 
 /* React 19 moved JSX types under the react module namespace. */
 declare module 'react' {
   namespace JSX {
-    interface IntrinsicElements {
-      'kfr-map': KfrMapJSX;
-    }
+    interface IntrinsicElements extends CityElements {}
   }
 }
