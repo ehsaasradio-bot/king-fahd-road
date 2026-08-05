@@ -92,19 +92,19 @@
     <kfr-map data-map sidebar="off" interactive="off" view="faisaliah"></kfr-map>
     <div class="cityname">Riyadh</div>
 
-    <div class="card" data-card data-in="0.6" data-out="2.6">
+    <div class="card" data-card data-in="2.0" data-out="3.6">
       <div class="tag">King Fahd Road · 01</div>
       <h2>Al Faisaliyah</h2>
       <div class="fig"><span data-count="267">0</span><em>&nbsp;m</em></div>
       <p>The kingdom's first skyscraper — a pyramid holding a golden sphere.</p>
     </div>
-    <div class="card" data-card data-in="3.2" data-out="5.4">
+    <div class="card" data-card data-in="4.2" data-out="6.0">
       <div class="tag">King Fahd Road · 02</div>
       <h2>Kingdom Centre</h2>
       <div class="fig"><span data-count="302">0</span><em>&nbsp;m</em></div>
       <p>The inverted arch — a skybridge with the city threaded through its void.</p>
     </div>
-    <div class="card" data-card data-in="6.4" data-out="9.2">
+    <div class="card" data-card data-in="6.6" data-out="9.4">
       <div class="tag">King Fahd Road · 03</div>
       <h2>KAFD</h2>
       <div class="fig"><span data-count="385">0</span><em>&nbsp;m</em></div>
@@ -119,19 +119,19 @@
     <jeddah-map data-map sidebar="off" interactive="off"></jeddah-map>
     <div class="cityname">Jeddah</div>
 
-    <div class="card" data-card data-in="0.6" data-out="2.6">
+    <div class="card" data-card data-in="2.0" data-out="3.6">
       <div class="tag">Corniche · 01</div>
       <h2>Al Balad</h2>
       <div class="fig"><span data-count="7">0</span><em>&nbsp;centuries</em></div>
       <p>The old town where the Red Sea trade landed — coral houses and roshan screens.</p>
     </div>
-    <div class="card" data-card data-in="3.2" data-out="5.4">
+    <div class="card" data-card data-in="4.2" data-out="6.0">
       <div class="tag">Corniche · 02</div>
       <h2>Aqua Tower</h2>
       <div class="fig"><span data-count="251">0</span><em>&nbsp;m</em></div>
       <p>The waterfront's tallest — glass rising straight off the Corniche.</p>
     </div>
-    <div class="card" data-card data-in="6.4" data-out="9.2">
+    <div class="card" data-card data-in="6.6" data-out="9.4">
       <div class="tag">Corniche · 03</div>
       <h2>The Waterfront</h2>
       <div class="fig"><span data-count="30">0</span><em>&nbsp;km</em></div>
@@ -146,19 +146,19 @@
     <dammam-map data-map sidebar="off" interactive="off"></dammam-map>
     <div class="cityname">Dammam</div>
 
-    <div class="card" data-card data-in="0.6" data-out="2.6">
+    <div class="card" data-card data-in="2.0" data-out="3.6">
       <div class="tag">King Saud St &middot; 01</div>
       <h2>Balhamer Business Gate</h2>
       <div class="fig"><span data-count="85">0</span><em>&nbsp;m</em></div>
       <p>The tallest thing on the street, standing over the road to the Gulf.</p>
     </div>
-    <div class="card" data-card data-in="3.2" data-out="5.4">
+    <div class="card" data-card data-in="4.2" data-out="6.0">
       <div class="tag">King Saud St &middot; 02</div>
       <h2>Sheraton Dammam</h2>
       <div class="fig"><span data-count="70">0</span><em>&nbsp;m</em></div>
       <p>A convention landmark a block back from the corniche.</p>
     </div>
-    <div class="card" data-card data-in="6.4" data-out="9.2">
+    <div class="card" data-card data-in="6.6" data-out="9.4">
       <div class="tag">King Saud St &middot; 03</div>
       <h2>The Gulf Edge</h2>
       <div class="fig"><span data-count="6160">0</span><em>&nbsp;bldgs</em></div>
@@ -173,19 +173,19 @@
     <makkah-map data-map sidebar="off" interactive="off"></makkah-map>
     <div class="cityname">Makkah</div>
 
-    <div class="card" data-card data-in="0.6" data-out="2.6">
+    <div class="card" data-card data-in="2.0" data-out="3.6">
       <div class="tag">Ibrahim Al Khalil Rd &middot; 01</div>
       <h2>The Clock Towers</h2>
       <div class="fig"><span data-count="420">0</span><em>&nbsp;m</em></div>
       <p>Abraj Al Bait, rising over the valley beside the Haram.</p>
     </div>
-    <div class="card" data-card data-in="3.2" data-out="5.4">
+    <div class="card" data-card data-in="4.2" data-out="6.0">
       <div class="tag">Ibrahim Al Khalil Rd &middot; 02</div>
       <h2>Abraj As Safwah</h2>
       <div class="fig"><span data-count="160">0</span><em>&nbsp;m</em></div>
       <p>One of the towers lining the approach road.</p>
     </div>
-    <div class="card" data-card data-in="6.4" data-out="9.2">
+    <div class="card" data-card data-in="6.6" data-out="9.4">
       <div class="tag">Ibrahim Al Khalil Rd &middot; 03</div>
       <h2>Jabal Omar</h2>
       <div class="fig"><span data-count="1330">0</span><em>&nbsp;bldgs</em></div>
@@ -238,14 +238,24 @@ window.addEventListener('load', function () {
     function start() {
       if (reduced) { map.setInteractive(true); return; }
 
-      var cam = { p: 0 }, dusk = { n: 0 };
+      var cam = { p: 0 }, dusk = { n: 0 }, build = { b: 0 };
+
+      /* start as a flat plan, framed wide, so the rise has somewhere to go */
+      map.setBuild(0);
+      map.scrub(0);
+      map.api.view.size *= 1.35;      /* the camera lives on the api, not the element */
+
       var tl = gsap.timeline({
         scrollTrigger: { trigger: section, start: 'top top', end: 'bottom bottom', scrub: 1 }
       });
 
-      // the camera rides that city's spine across the whole section
-      tl.to(cam, { p: 1, duration: 10, ease: 'none',
-                   onUpdate: function () { map.scrub(cam.p); } }, 0);
+      // the city rises out of its own footprints, as on each city's own page
+      tl.to(build, { b: 1.35, duration: 1.8, ease: 'power1.inOut',
+                     onUpdate: function () { map.setBuild(build.b); } }, 0);
+
+      // then the camera rides that city's spine across the rest of the section
+      tl.to(cam, { p: 1, duration: 9, ease: 'none',
+                   onUpdate: function () { map.scrub(cam.p); } }, 1.0);
 
       section.querySelectorAll('[data-card]').forEach(function (card) {
         var tIn = +card.dataset.in, tOut = +card.dataset.out;
