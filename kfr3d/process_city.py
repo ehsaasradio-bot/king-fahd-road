@@ -387,14 +387,51 @@ for i, n in enumerate(top):
     presets[key] = {'label': n[:16], 'tx': round(x), 'tz': round(z),
                     'azim': -0.7 + 0.2 * i, 'elev': 0.5, 'size': SZ[i]}
 
-# the ride: down the spine, south to north
-spine_local = sorted([prj(*p) for p in spine_pts], key=lambda p: -p[1])
+# The ride: down the spine, south to north — but only across the stretch that
+# actually has a city on it. Spines run far past the mapped area, and the thin
+# ends would open the story on empty desert, so rank each point by how much
+# city surrounds it and keep the dense run.
+DCELL = 200.0
+_dgrid = {}
+for _b in buildings:
+    _xs, _zs = _b['o'][0::2], _b['o'][1::2]
+    _k = (int((sum(_xs) / len(_xs)) // DCELL), int((sum(_zs) / len(_zs)) // DCELL))
+    _dgrid[_k] = _dgrid.get(_k, 0) + 1
+
+
+def _density(p):
+    gx, gz = int(p[0] // DCELL), int(p[1] // DCELL)
+    n = 0
+    for a in range(gx - 3, gx + 4):
+        for b in range(gz - 3, gz + 4):
+            n += _dgrid.get((a, b), 0)
+    return n
+
+
+_pts = [(p, _density(p)) for p in (prj(*q) for q in spine_pts)]
+_live = [d for _, d in _pts if d > 0]
+_floor = max(8, (sorted(_live)[len(_live) // 2] * 0.35) if _live else 0)
+spine_local = [p for p, d in _pts if d >= _floor]
+if len(spine_local) < 4:
+    spine_local = [p for p, _ in _pts]
+    print('  !! spine has little city on it, using it whole')
+else:
+    print('  ride spans %d of %d spine points (density floor %d)'
+          % (len(spine_local), len(_pts), _floor))
+spine_local = sorted(spine_local, key=lambda p: -p[1])
 anchors = []
 for i in range(4):
     p = spine_local[int((len(spine_local) - 1) * i / 3)]
     anchors.append({'tx': round(p[0]), 'tz': round(p[1]),
                     'azim': -0.9 + 0.5 * i / 3, 'elev': 0.46 + 0.1 * i / 3,
                     'size': [1600, 1300, 1100, 900][i]})
+
+for i, a in enumerate(anchors):
+    r = a['size'] * 0.6
+    n = sum(1 for b in buildings
+            if abs(sum(b['o'][0::2]) / (len(b['o']) // 2) - a['tx']) < r
+            and abs(sum(b['o'][1::2]) / (len(b['o']) // 2) - a['tz']) < r)
+    print('  anchor %d: %d buildings in frame' % (i + 1, n))
 
 scene = {
     'meta': {'city': cfg['label'], 'spine': cfg['spine'],

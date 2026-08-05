@@ -216,6 +216,7 @@ window.addEventListener('load', function () {
   var LAZY = true;
 
   var fetched = {};
+  var pending = [];
   function loadMap(src) {
     if (fetched[src]) return fetched[src];
     (window.__mapLoads = window.__mapLoads || []).push(
@@ -293,17 +294,38 @@ window.addEventListener('load', function () {
     var src = section.dataset.mapSrc;
     if (!src) { wire(); return; }
 
-    if (!LAZY || !('IntersectionObserver' in window)) {
-      loadMap(src).then(wire);
-      return;
-    }
-    var io = new IntersectionObserver(function (entries) {
-      if (!entries[0].isIntersecting) return;
-      io.disconnect();
-      loadMap(src).then(wire).catch(function (e) { console.error(e); });
-    }, { rootMargin: '150% 0px' });     // start fetching a viewport and a half out
-    io.observe(section);
+    if (!LAZY) { loadMap(src).then(wire).catch(console.error); return; }
+    pending.push({ el: section, src: src, wire: wire });
   });
+
+  /* Load a city once it is within ~2.5 viewports, or once it has been passed.
+     A plain distance test rather than IntersectionObserver: jumping straight to
+     the bottom (deep link, restored scroll, a fast flick) can leave IO having
+     only ever seen "not intersecting", which would strand that city unloaded. */
+  function pump() {
+    for (var i = pending.length - 1; i >= 0; i--) {
+      var p = pending[i];
+      if (p.el.getBoundingClientRect().top < window.innerHeight * 2.5) {
+        pending.splice(i, 1);
+        (function (q) {
+          loadMap(q.src).then(q.wire).catch(function (e) { console.error(e); });
+        })(p);
+      }
+    }
+    if (!pending.length) {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    }
+  }
+  var queued = false;
+  function onScroll() {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(function () { queued = false; pump(); });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  pump();
 });
 </script>
 </body>
