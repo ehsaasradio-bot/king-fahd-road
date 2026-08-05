@@ -66,7 +66,8 @@
   .grid { padding: 12vh 6vw; display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); background: #0B0D2E; }
   .grid h2 { grid-column: 1/-1; font-weight: 400; font-size: clamp(1.8rem, 5vw, 3.4rem); color: #DFE2FF; margin-bottom: 2vh; }
   .grid h2 span { color: var(--green); }
-  .tile { border: 1.5px solid #7A80D8; border-radius: 4px; padding: 22px; color: #DFE2FF; }
+  .tile { display: block; text-decoration: none; transition: background .2s; border: 1.5px solid #7A80D8; border-radius: 4px; padding: 22px; color: #DFE2FF; }
+  .tile:hover { background: #141A4A; }
   .tile b { font-weight: 400; font-size: 17px; letter-spacing: 0.07em; display: block; }
   .tile small { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.2em; color: #7A80CF; text-transform: none; display: block; margin-top: 8px; line-height: 1.8; }
 
@@ -142,9 +143,9 @@
 </section>
 
 <section class="grid">
-  <h2>Next: <span>more spines</span></h2>
-  <div class="tile"><b>Dammam</b><small>King Saud St — awaiting scene data</small></div>
-  <div class="tile"><b>Makkah</b><small>Ibrahim Al Khalil Rd — awaiting scene data</small></div>
+  <h2>More <span>spines</span></h2>
+  <a class="tile" href="dammam.html"><b>Dammam</b><small>King Saud St &amp; the Gulf corniche — 6,160 buildings</small></a>
+  <a class="tile" href="makkah.html"><b>Makkah</b><small>Ibrahim Al Khalil Rd — 1,330 buildings</small></a>
 </section>
 
 <footer>
