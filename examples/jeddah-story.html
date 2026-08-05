@@ -28,33 +28,14 @@
   #act { height: 1100vh; position: relative; }
   #stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
 
-  /* the live 3D city, revealed when the drawing parts */
-  #map { position: absolute; inset: 0; opacity: 0; }
+  /* the live 3D city */
+  #map { position: absolute; inset: 0; }
 
-  /* ---------- the diorama: flat drawing, split into depth planes ---------- */
-  #diorama {
-    position: absolute; inset: 0; z-index: 2; pointer-events: none;
-    perspective: 1200px; perspective-origin: 50% 62%;
-  }
-  #dolly { position: absolute; inset: 0; transform-style: preserve-3d; }
-  .plane { position: absolute; inset: 0; transform-style: preserve-3d; }
-  .plane svg {
-    position: absolute; left: 0; right: 0; bottom: 14vh;
-    width: 100%; height: 50vh; overflow: visible;
-  }
-  .plane path, .plane line, .plane circle, .plane rect, .plane ellipse, .plane polyline {
-    fill: none; stroke: var(--ink); stroke-width: 2;
-    stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke;
-  }
-  .plane .fine { stroke-width: 1.1; stroke: var(--ink-soft); }
-  .plane .accent { stroke: var(--green-dk); stroke-width: 2.4; }
-  .plane .wash { fill: var(--wash); stroke: none; }
-  .plane .solid { fill: var(--ink); stroke: none; }
-
-  /* the ruled ground the whole drawing stands on */
-  #horizon {
-    position: absolute; left: 0; right: 0; bottom: 14vh; height: 2px;
-    background: var(--ink); z-index: 3; transform-origin: left center; transform: scaleX(0);
+  /* the copy sits on a wash so the headline reads over the city */
+  .scrim {
+    position: absolute; inset: 0 0 auto 0; height: 56vh; z-index: -1;
+    background: linear-gradient(180deg, rgba(255,255,255,.93) 0%,
+                rgba(255,255,255,.88) 42%, rgba(255,255,255,0) 100%);
   }
 
   /* ---------- type ---------- */
@@ -110,10 +91,10 @@
 
   @media (prefers-reduced-motion: reduce) {
     #act { height: auto; } #stage { position: relative; }
-    #map { opacity: 1; } #diorama, #rail, .cue { display: none; }
+    #rail, .cue { display: none; }
     .card { position: static; opacity: 1; visibility: visible; margin: 14px 0; }
   }
-  @media (max-width: 700px) { .plane svg { height: 40vh; } #rail { right: 12px; } }
+  @media (max-width: 700px) { #rail { right: 12px; } }
 </style>
 </head>
 <body>
@@ -123,176 +104,11 @@
 
     <jeddah-map id="map" sidebar="off" interactive="off"></jeddah-map>
 
-    <!-- My own line drawing of Jeddah's landmarks, split across depth planes
-         so the camera can fly through it. Far planes first. -->
-    <div id="diorama"><div id="dolly">
-
-      <!-- ============ plane 0 · sky wash + sparkles ============ -->
-      <div class="plane" data-z="-1000">
-        <svg viewBox="0 0 2000 700" preserveAspectRatio="xMidYEnd meet">
-          <path class="wash" d="M0 640c120-40 200-190 330-190 120 0 150 90 250 60 120-36 150-330 420-330 300 0 300 300 470 300 150 0 180-140 300-140 130 0 170 150 230 210v90z"/>
-          <circle class="wash" cx="640" cy="300" r="80"/>
-          <circle class="wash" cx="1600" cy="270" r="60"/>
-          <g class="fine">
-            <path d="M1080 300v22M1069 311h22"/><path d="M1210 360v20M1200 370h20"/>
-            <path d="M360 420v20M350 430h20"/><path d="M1660 430v18M1651 439h18"/>
-            <path d="M170 480v18M161 489h18"/><path d="M1030 500v16M1022 508h16"/>
-          </g>
-        </svg>
-      </div>
-
-      <!-- ============ plane 1 · the tallest, farthest ============ -->
-      <div class="plane" data-z="-680">
-        <svg viewBox="0 0 2000 700" preserveAspectRatio="xMidYEnd meet">
-          <!-- Jeddah Tower: the spire -->
-          <path d="M1330 690V300l22-262 24 262v390z"/>
-          <path d="M1352 38v-30"/>
-          <path d="M1330 300l-26 40v350"/>
-          <path d="M1376 300l26 40v350"/>
-          <line class="fine" x1="1338" y1="380" x2="1370" y2="380"/>
-          <line class="fine" x1="1334" y1="450" x2="1374" y2="450"/>
-          <line class="fine" x1="1330" y1="520" x2="1378" y2="520"/>
-          <line class="fine" x1="1326" y1="590" x2="1382" y2="590"/>
-          <!-- tapered neighbour -->
-          <path d="M1408 690V330l86-26v386z"/>
-          <path d="M1408 330l86-26"/>
-          <line class="fine" x1="1416" y1="400" x2="1492" y2="400"/>
-          <line class="fine" x1="1416" y1="470" x2="1492" y2="470"/>
-          <line class="fine" x1="1416" y1="540" x2="1492" y2="540"/>
-          <line class="fine" x1="1416" y1="610" x2="1492" y2="610"/>
-          <path d="M1436 304l14-26h30l12 26"/>
-        </svg>
-      </div>
-
-      <!-- ============ plane 2 · the signature towers ============ -->
-      <div class="plane" data-z="-400">
-        <svg viewBox="0 0 2000 700" preserveAspectRatio="xMidYEnd meet">
-          <!-- the sail: leaning, striped -->
-          <path class="accent" d="M612 690V430c0-90 30-160 74-186v446z"/>
-          <path d="M660 690V266"/>
-          <g class="fine">
-            <path d="M620 500h62M617 540h69M614 580h72M612 620h74M612 660h74"/>
-            <path d="M628 460h58M640 420h46"/>
-          </g>
-          <path d="M686 244h34v40h-34z"/>
-
-          <!-- the twisted tower -->
-          <path d="M744 690V300h68v390z"/>
-          <path d="M744 330c34-22 34 22 68 0M744 380c34-22 34 22 68 0M744 430c34-22 34 22 68 0M744 480c34-22 34 22 68 0M744 530c34-22 34 22 68 0M744 580c34-22 34 22 68 0"/>
-          <path d="M736 300h84l-14-30h-56z"/>
-          <path d="M760 270v-22h36v22"/>
-          <path d="M778 248v-30"/>
-          <path d="M726 690v-40h104v40z"/>
-
-          <!-- kandeel: the lamp tower -->
-          <path d="M1196 690V520h52v170z"/>
-          <ellipse cx="1222" cy="470" rx="46" ry="52"/>
-          <path class="fine" d="M1222 418c-24 20-24 84 0 104M1222 418c24 20 24 84 0 104M1176 470h92"/>
-          <path d="M1206 418v-26h32v26z"/>
-          <path d="M1214 392v-24h16v24"/>
-          <path d="M1180 690c0-30 84-30 84 0z"/>
-        </svg>
-      </div>
-
-      <!-- ============ plane 3 · the old city ============ -->
-      <div class="plane" data-z="-180">
-        <svg viewBox="0 0 2000 700" preserveAspectRatio="xMidYEnd meet">
-          <!-- Al Balad tower house -->
-          <path d="M440 690V400h116v290z"/>
-          <path d="M436 400h124l-10-22h-104z"/>
-          <rect x="468" y="440" width="60" height="52"/>
-          <rect x="468" y="540" width="60" height="52"/>
-          <g class="fine">
-            <path d="M468 458h60M468 476h60M488 440v52M508 440v52"/>
-            <path d="M468 558h60M468 576h60M488 540v52M508 540v52"/>
-          </g>
-
-          <!-- the mosque -->
-          <path d="M930 690V560h300v130z"/>
-          <path d="M960 560c0-90 240-90 240 0"/>
-          <path d="M1080 470v-24"/>
-          <path d="M1074 446c0-12 12-12 12 0"/>
-          <g class="fine">
-            <path d="M960 526h240"/>
-            <path d="M950 600h20v90h-20zM990 600h20v90h-20zM1030 600h20v90h-20zM1070 600h20v90h-20zM1110 600h20v90h-20zM1150 600h20v90h-20zM1190 600h20v90h-20z"/>
-          </g>
-          <!-- minaret -->
-          <path d="M1140 560V400h22v160z"/>
-          <path d="M1136 400h30l-6-16h-18z"/>
-          <path d="M1144 384v-20h14v20"/>
-          <path d="M1151 364v-22"/>
-          <line class="fine" x1="1140" y1="450" x2="1162" y2="450"/>
-
-          <!-- Bab Makkah: crenellated walls and gates -->
-          <path d="M1540 690V540h420v150z"/>
-          <path d="M1540 540h420"/>
-          <g class="fine"><path d="M1548 540v-20h20v20M1588 540v-20h20v20M1628 540v-20h20v20M1668 540v-20h20v20M1708 540v-20h20v20M1748 540v-20h20v20M1788 540v-20h20v20M1828 540v-20h20v20M1868 540v-20h20v20M1908 540v-20h20v20M1948 540v-20h12v20"/></g>
-          <path d="M1660 690v-70a34 34 0 0 1 68 0v70"/>
-          <path d="M1780 690v-50a24 24 0 0 1 48 0v50"/>
-          <path d="M1580 690v-50a22 22 0 0 1 44 0v50"/>
-          <path d="M1880 690v-46a22 22 0 0 1 44 0v46"/>
-          <rect x="1600" y="482" width="34" height="58"/>
-          <rect x="1880" y="482" width="34" height="58"/>
-        </svg>
-      </div>
-
-      <!-- ============ plane 4 · nearest: globe, palms, lamp, flag ============ -->
-      <div class="plane" data-z="0">
-        <svg viewBox="0 0 2000 700" preserveAspectRatio="xMidYEnd meet">
-          <!-- the globe sculpture -->
-          <circle cx="200" cy="560" r="86"/>
-          <g class="fine">
-            <ellipse cx="200" cy="560" rx="86" ry="30"/>
-            <ellipse cx="200" cy="560" rx="86" ry="58"/>
-            <ellipse cx="200" cy="560" rx="34" ry="86"/>
-            <ellipse cx="200" cy="560" rx="64" ry="86"/>
-            <path d="M114 560h172M200 474v172"/>
-          </g>
-          <path d="M120 690l150-96M280 690l-150-96"/>
-          <path d="M186 646h28v44h-28z"/>
-          <path d="M96 690h208"/>
-
-          <!-- street lamp -->
-          <path d="M566 690V486"/>
-          <path d="M548 486h36l-8-46h-20z"/>
-          <path d="M552 440h28"/>
-          <path d="M566 434v-18"/>
-          <path d="M552 690h28"/>
-
-          <!-- flag -->
-          <path d="M876 690V450"/>
-          <path d="M876 460h84v52h-84z"/>
-          <path d="M862 690h28"/>
-
-          <!-- palms -->
-          <g>
-            <path d="M330 690v-96"/>
-            <path d="M330 594c-30-26-58-20-70 2 26-6 44 0 70 12M330 594c30-26 58-20 70 2-26-6-44 0-70 12M330 594c-8-34 6-58 30-64-12 22-16 42-30 76M330 594c8-34-6-58-30-64 12 22 16 42 30 76"/>
-            <g class="fine"><path d="M322 640h16M322 664h16"/></g>
-          </g>
-          <g>
-            <path d="M700 690v-80"/>
-            <path d="M700 610c-26-22-50-18-60 2 22-5 38 0 60 10M700 610c26-22 50-18 60 2-22-5-38 0-60 10M700 610c-7-29 5-50 26-55-10 19-14 36-26 65M700 610c7-29-5-50-26-55 10 19 14 36 26 65"/>
-          </g>
-          <g>
-            <path d="M1290 690v-76"/>
-            <path d="M1290 614c-24-20-46-16-56 2 20-5 35 0 56 9M1290 614c24-20 46-16 56 2-20-5-35 0-56 9M1290 614c-6-27 5-46 24-51-9 18-13 33-24 60M1290 614c6-27-5-46-24-51 9 18 13 33 24 60"/>
-          </g>
-          <g>
-            <path d="M1450 690v-70"/>
-            <path d="M1450 620c-22-18-42-15-51 2 18-4 32 0 51 8M1450 620c22-18 42-15 51 2-18-4-32 0-51 8M1450 620c-6-25 4-42 22-47-8 16-12 30-22 55M1450 620c6-25-4-42-22-47 8 16 12 30 22 55"/>
-          </g>
-        </svg>
-      </div>
-
-    </div></div>
-
-    <div id="horizon"></div>
-
     <div class="copy">
+      <div class="scrim"></div>
       <div class="eyebrow">Red Sea &middot; 21.54&deg; N</div>
       <h1 id="title"></h1>
-      <p class="sub">A city drawn from the water &mdash; then flown through, into 5,465 real buildings on the Corniche.</p>
+      <p class="sub">A city drawn from the water &mdash; 5,465 real buildings along the Corniche, on the Red Sea.</p>
     </div>
 
     <div class="cue"><i></i>Scroll</div>
@@ -357,46 +173,13 @@ window.addEventListener('load', function () {
     if (reduced) { map.setInteractive(true); return; }
     gsap.registerPlugin(ScrollTrigger);
 
-    var planes = gsap.utils.toArray('.plane');
-
-    /* Park each plane at its depth, scaling it back up by exactly the amount
-       perspective shrinks it. The drawing therefore reads as one flat elevation
-       until the camera moves — then the planes separate. */
-    var PERSP = 1200;
-    planes.forEach(function (p) {
-      var z = +p.dataset.z;
-      gsap.set(p, { z: z, scale: (PERSP + Math.abs(z)) / PERSP, transformOrigin: '50% 78%' });
-    });
-
-    /* every stroke starts undrawn, far planes first */
-    var strokes = [];
-    planes.forEach(function (p) {
-      gsap.utils.toArray(p.querySelectorAll('path:not(.wash), line, circle, rect, ellipse, polyline')).forEach(function (el) {
-        var len = 400;
-        try { if (el.getTotalLength) len = el.getTotalLength() || 400; } catch (e) {}
-        el.style.strokeDasharray = len;
-        el.style.strokeDashoffset = len;
-        strokes.push(el);
-      });
-    });
-    gsap.set('.wash', { autoAlpha: 0 });
-
     var api = map.api;
     api.setBuild(0);
     api.jump('balad');
-    api.view.elev = 0.30;
+    api.view.elev = 0.62;      /* look down a little so the skyline sits under the type */
+    api.view.size *= 1.2;
 
-    /* pointer parallax — the diorama turns slightly with the cursor */
-    var rotY = gsap.quickTo('#dolly', 'rotationY', { duration: 0.9, ease: 'power2.out' });
-    var rotX = gsap.quickTo('#dolly', 'rotationX', { duration: 0.9, ease: 'power2.out' });
-    var parallax = true;
-    window.addEventListener('pointermove', function (e) {
-      if (!parallax) return;
-      rotY((e.clientX / window.innerWidth - 0.5) * 9);
-      rotX((0.5 - e.clientY / window.innerHeight) * 5);
-    });
-
-    var cam = { z: 0 }, p3 = { p: 0 }, build = { b: 0 }, dusk = { n: 0 };
+    var p3 = { p: 0 }, build = { b: 0 }, dusk = { n: 0 };
     var dots = gsap.utils.toArray('#rail .dot2');
 
     var tl = gsap.timeline({
@@ -410,32 +193,26 @@ window.addEventListener('load', function () {
       defaults: { ease: 'none' }
     });
 
-    /* ---- ACT 1 · the drawing draws itself, back to front ---- */
-    tl.to('#horizon', { scaleX: 1, duration: 0.45, ease: 'power2.inOut' }, 0)
-      .to('.wash', { autoAlpha: 1, duration: 0.6 }, 0.15)
-      .to(strokes, { strokeDashoffset: 0, duration: 1.7, stagger: { each: 0.006, from: 'start' } }, 0.2)
-      .from('#title .ch', { yPercent: 130, duration: 0.7, ease: 'expo.out', stagger: 0.05 }, 0.9)
-      .from('.eyebrow', { autoAlpha: 0, x: -20, duration: 0.4 }, 1.2)
-      .from('.sub', { autoAlpha: 0, y: 20, duration: 0.5 }, 1.5);
+    /* ---- ACT 1 · the city rises out of its own footprints ---- */
+    tl.to(build, { b: 1.35, duration: 1.7, ease: 'power1.inOut',
+                   onUpdate: function () { api.setBuild(build.b); } }, 0.1)
+      .from('#title .ch', { yPercent: 130, duration: 0.7, ease: 'expo.out', stagger: 0.05 }, 0.5)
+      .from('.eyebrow', { autoAlpha: 0, x: -20, duration: 0.4 }, 0.9)
+      .from('.sub', { autoAlpha: 0, y: 20, duration: 0.5 }, 1.1);
 
-    /* ---- ACT 2 · fly the camera THROUGH the drawing ---- */
-    tl.to(cam, {
-      z: 760, duration: 2.0, ease: 'power2.in',
-      onUpdate: function () { gsap.set('#dolly', { z: cam.z }); }
-    }, 2.2);
+    /* the map draws its own landmark chips — keep them down until the type has
+       left, enforced after each render since setBuild writes the same property */
+    var chips = map.shadowRoot && map.shadowRoot.getElementById('labels');
+    if (chips) {
+      chips.style.transition = 'opacity .45s';
+      tl.eventCallback('onUpdate', function () {
+        chips.style.opacity = tl.time() < 3.2 ? '0' : '';
+      });
+    }
 
-    /* each plane dissolves as it rushes past the lens, nearest first */
-    planes.slice().reverse().forEach(function (p, i) {
-      tl.to(p, { autoAlpha: 0, duration: 0.5 }, 2.35 + i * 0.30);
-    });
-
-    tl.to('#title .ch', { yPercent: -200, autoAlpha: 0, duration: 0.6, ease: 'power2.in', stagger: 0.03 }, 2.3)
-      .to(['.sub', '.eyebrow', '.cue'], { autoAlpha: 0, duration: 0.4 }, 2.25)
-      .to('#horizon', { autoAlpha: 0, duration: 0.4 }, 2.5)
-      .to('#map', { opacity: 1, duration: 1.0 }, 2.9)
-      .to(build, { b: 1.35, duration: 1.4, ease: 'power1.inOut',
-                   onUpdate: function () { api.setBuild(build.b); } }, 3.0)
-      .add(function () { parallax = false; }, 3.4);
+    /* ---- ACT 2 · the type clears ---- */
+    tl.to('#title .ch', { yPercent: -210, autoAlpha: 0, duration: 0.6, ease: 'power2.in', stagger: 0.03 }, 3.0)
+      .to(['.sub', '.eyebrow', '.cue', '.scrim'], { autoAlpha: 0, duration: 0.5 }, 2.9);
 
     /* ---- ACT 3 · sail the Corniche ---- */
     tl.to(p3, { p: 1, duration: 7.4, onUpdate: function () { api.scrub(p3.p); } }, 3.8);
