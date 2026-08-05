@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cities of KSA</title>
 
-<!-- one script per city map, plus GSAP -->
-<script src="kfr-map.js" defer></script>
-<script src="jeddah-map.js" defer></script>
+<!-- city maps are fetched lazily as each section nears the viewport (see LAZY below) -->
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
 
@@ -89,7 +87,7 @@
 </header>
 
 <!-- ============ RIYADH ============ -->
-<section class="city" id="riyadh" data-city data-night="5.6">
+<section class="city" id="riyadh" data-city data-night="5.6" data-map-src="kfr-map.js">
   <div class="stage">
     <kfr-map data-map sidebar="off" interactive="off" view="faisaliah"></kfr-map>
     <div class="cityname">Riyadh</div>
@@ -116,7 +114,7 @@
 </section>
 
 <!-- ============ JEDDAH ============ -->
-<section class="city" id="jeddah" data-city data-night="6.2">
+<section class="city" id="jeddah" data-city data-night="6.2" data-map-src="jeddah-map.js">
   <div class="stage">
     <jeddah-map data-map sidebar="off" interactive="off"></jeddah-map>
     <div class="cityname">Jeddah</div>
@@ -142,9 +140,65 @@
   </div>
 </section>
 
+<!-- ============ DAMMAM · delete this whole section to revert ============ -->
+<section class="city" id="dammam" data-city data-night="6.2" data-map-src="dammam-map.js">
+  <div class="stage">
+    <dammam-map data-map sidebar="off" interactive="off"></dammam-map>
+    <div class="cityname">Dammam</div>
+
+    <div class="card" data-card data-in="0.6" data-out="2.6">
+      <div class="tag">King Saud St &middot; 01</div>
+      <h2>Balhamer Business Gate</h2>
+      <div class="fig"><span data-count="85">0</span><em>&nbsp;m</em></div>
+      <p>The tallest thing on the street, standing over the road to the Gulf.</p>
+    </div>
+    <div class="card" data-card data-in="3.2" data-out="5.4">
+      <div class="tag">King Saud St &middot; 02</div>
+      <h2>Sheraton Dammam</h2>
+      <div class="fig"><span data-count="70">0</span><em>&nbsp;m</em></div>
+      <p>A convention landmark a block back from the corniche.</p>
+    </div>
+    <div class="card" data-card data-in="6.4" data-out="9.2">
+      <div class="tag">King Saud St &middot; 03</div>
+      <h2>The Gulf Edge</h2>
+      <div class="fig"><span data-count="6160">0</span><em>&nbsp;bldgs</em></div>
+      <p>Every footprint along the corridor, with the Arabian Gulf to the east.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MAKKAH · delete this whole section to revert ============ -->
+<section class="city" id="makkah" data-city data-night="6.2" data-map-src="makkah-map.js">
+  <div class="stage">
+    <makkah-map data-map sidebar="off" interactive="off"></makkah-map>
+    <div class="cityname">Makkah</div>
+
+    <div class="card" data-card data-in="0.6" data-out="2.6">
+      <div class="tag">Ibrahim Al Khalil Rd &middot; 01</div>
+      <h2>The Clock Towers</h2>
+      <div class="fig"><span data-count="420">0</span><em>&nbsp;m</em></div>
+      <p>Abraj Al Bait, rising over the valley beside the Haram.</p>
+    </div>
+    <div class="card" data-card data-in="3.2" data-out="5.4">
+      <div class="tag">Ibrahim Al Khalil Rd &middot; 02</div>
+      <h2>Abraj As Safwah</h2>
+      <div class="fig"><span data-count="160">0</span><em>&nbsp;m</em></div>
+      <p>One of the towers lining the approach road.</p>
+    </div>
+    <div class="card" data-card data-in="6.4" data-out="9.2">
+      <div class="tag">Ibrahim Al Khalil Rd &middot; 03</div>
+      <h2>Jabal Omar</h2>
+      <div class="fig"><span data-count="1330">0</span><em>&nbsp;bldgs</em></div>
+      <p>The corridor of hotels and towers threading the valley floor.</p>
+    </div>
+  </div>
+</section>
+
 <section class="grid">
-  <h2>More <span>spines</span></h2>
-  <a class="tile" href="dammam.html"><b>Dammam</b><small>King Saud St &amp; the Gulf corniche — 6,160 buildings</small></a>
+  <h2>Each city, <span>on its own</span></h2>
+  <a class="tile" href="index.html"><b>Riyadh</b><small>King Fahd Road — 3,439 buildings</small></a>
+  <a class="tile" href="jeddah.html"><b>Jeddah</b><small>Corniche — 5,465 buildings</small></a>
+  <a class="tile" href="dammam.html"><b>Dammam</b><small>King Saud St &amp; the Gulf — 6,160 buildings</small></a>
   <a class="tile" href="makkah.html"><b>Makkah</b><small>Ibrahim Al Khalil Rd — 1,330 buildings</small></a>
 </section>
 
@@ -156,6 +210,25 @@
 window.addEventListener('load', function () {
   var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!reduced) gsap.registerPlugin(ScrollTrigger);
+
+  /* Each city map is ~1.1-1.7 MB, so they are fetched only as their section
+     approaches. Set LAZY = false to load all of them upfront instead. */
+  var LAZY = true;
+
+  var fetched = {};
+  function loadMap(src) {
+    if (fetched[src]) return fetched[src];
+    (window.__mapLoads = window.__mapLoads || []).push(
+      { src: src, atScrollY: Math.round(window.scrollY) });
+    fetched[src] = new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = src; s.async = true;
+      s.onload = resolve;
+      s.onerror = function () { reject(new Error('could not load ' + src)); };
+      document.head.appendChild(s);
+    });
+    return fetched[src];
+  }
 
   /* wire any number of city sections — each owns one map + its cards */
   document.querySelectorAll('[data-city]').forEach(function (section) {
@@ -198,8 +271,28 @@ window.addEventListener('load', function () {
       }
     }
 
-    if (map.api) start();
-    else map.addEventListener('kfr-ready', start, { once: true });
+    function wire() {
+      /* the element only upgrades once its bundle lands */
+      if (map.api) start();
+      else map.addEventListener('kfr-ready', function () {
+        start();
+        if (!reduced) ScrollTrigger.refresh();   // positions settle after a late mount
+      }, { once: true });
+    }
+
+    var src = section.dataset.mapSrc;
+    if (!src) { wire(); return; }
+
+    if (!LAZY || !('IntersectionObserver' in window)) {
+      loadMap(src).then(wire);
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      if (!entries[0].isIntersecting) return;
+      io.disconnect();
+      loadMap(src).then(wire).catch(function (e) { console.error(e); });
+    }, { rootMargin: '150% 0px' });     // start fetching a viewport and a half out
+    io.observe(section);
   });
 });
 </script>
