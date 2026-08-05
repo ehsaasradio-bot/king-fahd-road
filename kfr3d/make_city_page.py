@@ -86,6 +86,13 @@ html = '''<!doctype html>
   #map {{ position: absolute; inset: 0; }}
 
   .copy {{ position: absolute; inset: 0; z-index: 4; pointer-events: none; }}
+  /* dense cities put towers and map labels right under the headline, so the
+     copy sits on its own wash that lifts away with the type */
+  .scrim {{
+    position: absolute; inset: 0 0 auto 0; height: 56vh; z-index: -1;
+    background: linear-gradient(180deg, rgba(255,255,255,.93) 0%,
+                rgba(255,255,255,.88) 42%, rgba(255,255,255,0) 100%);
+  }}
   .eyebrow {{ position: absolute; top: 9vh; left: 6vw; font-family: var(--mono); font-size: 10px; letter-spacing: .45em; color: var(--green-dk); }}
   h1 {{ position: absolute; top: 14vh; left: 0; right: 0; text-align: center;
         font-weight: 400; font-size: clamp(3rem, 12vw, 10rem); line-height: .88;
@@ -142,6 +149,7 @@ html = '''<!doctype html>
     <{TAG} id="map" sidebar="off" interactive="off"></{TAG}>
 
     <div class="copy">
+      <div class="scrim"></div>
       <div class="eyebrow">{EYEBROW}</div>
       <h1 id="title"></h1>
       <p class="sub">{SUB}</p>
@@ -190,7 +198,9 @@ window.addEventListener('load', function () {{
 
     var api = map.api;
     api.setBuild(0);
-    api.view.elev = 0.62;   /* look down at the opening so the skyline sits below the type */
+    /* open a little higher and pulled back, so the whole corridor reads */
+    api.view.elev = 0.70;
+    api.view.size *= 1.25;
 
     var cam = {{ p: 0 }}, build = {{ b: 0 }}, dusk = {{ n: 0 }};
     var dots = gsap.utils.toArray('#rail .dot2');
@@ -213,9 +223,21 @@ window.addEventListener('load', function () {{
       .from('.eyebrow', {{ autoAlpha: 0, x: -20, duration: 0.4 }}, 0.9)
       .from('.sub', {{ autoAlpha: 0, y: 20, duration: 0.5 }}, 1.1);
 
+    /* The map draws its own landmark chips, which would sit right under the
+       headline on a dense city. Keep them down until the type has left.
+       Enforced after each render — setBuild writes this same property, so a
+       competing tween would win or lose depending on render order. */
+    var chips = map.shadowRoot && map.shadowRoot.getElementById('labels');
+    if (chips) {{
+      chips.style.transition = 'opacity .45s';
+      tl.eventCallback('onUpdate', function () {{
+        chips.style.opacity = tl.time() < 3.2 ? '0' : '';
+      }});
+    }}
+
     /* type clears, the ride begins */
     tl.to('#title .ch', {{ yPercent: -200, autoAlpha: 0, duration: 0.6, ease: 'power2.in', stagger: 0.03 }}, 3.0)
-      .to(['.sub', '.eyebrow', '.cue'], {{ autoAlpha: 0, duration: 0.4 }}, 2.9);
+      .to(['.sub', '.eyebrow', '.cue', '.scrim'], {{ autoAlpha: 0, duration: 0.5 }}, 2.9);
 
     tl.to(cam, {{ p: 1, duration: 7.4, onUpdate: function () {{ api.scrub(cam.p); }} }}, 3.6);
 
