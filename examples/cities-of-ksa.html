@@ -15,6 +15,9 @@
   :root {
     --ink: #2E3192; --ink-deep: #1B1E63; --ink-soft: #7A80CF;
     --green: #8CC63F; --green-dk: #5c8f28;
+    /* how much scroll each city gets. Was 400vh; 250vh makes the ride
+       brisker. Change this one value to retune or revert. */
+    --city-scroll: 250vh;
     --font: var(--font-f-aeonik-pro, "Aeonik Pro", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif);
     --mono: ui-monospace, "SF Mono", Menlo, monospace;
   }
@@ -28,7 +31,7 @@
   .lede { margin-top: 20px; font-size: clamp(10px, 1.3vw, 12px); letter-spacing: 0.26em; color: var(--ink-soft); max-width: 560px; line-height: 2; }
 
   /* a city = tall wrapper + sticky stage */
-  .city { height: 400vh; position: relative; }
+  .city { height: var(--city-scroll); position: relative; }
   .stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
   .stage > *[data-map] { position: absolute; inset: 0; }
 
