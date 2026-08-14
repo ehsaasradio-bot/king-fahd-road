@@ -13,8 +13,22 @@ CITIES = {
         'spine_keys': (),
         'coast': False,
         'focus': (24.46865, 39.61117, "Prophet's Mosque"),   # lat, lon, name
+        'land': (24.46758, 39.61144, 'Green Dome'),
         'radius': 2400,
-        'overrides': {"Prophet's Mosque": 42.0},
+        'overrides': {"Prophet's Mosque": 42.0, 'Green Dome': 26.0, 'White Dome': 9.0},
+        # nothing here overtops the mosque, so the descent can come in lower and
+        # read the minarets and the dome in profile
+        # The Green Dome sits at the mosque's south-east corner, not its middle,
+        # so the aim only drifts part of the way onto it — going the whole way
+        # swings the frame off the building and onto the street beside it.
+        'descent': [
+            (4800, 0.92, -2.70, 0.00),
+            (3000, 0.88, -2.44, 0.12),
+            (1250, 0.84, -2.10, 0.28),
+            (760, 0.80, -1.82, 0.40),
+            (470, 0.78, -1.60, 0.50),
+            (300, 0.72, -1.50, 0.82),
+        ],
         'ride': [],
     },
     'makkah2': {
@@ -574,7 +588,7 @@ if cfg.get('focus'):
         # and steep the whole way down, because Makkah's towers stand right on
         # the mosque and a low angle just buries it behind the Clock Tower. The
         # arc is held on the side the towers are not on.
-        SPIRAL = [
+        SPIRAL = cfg.get('descent') or [
             (RAD * 2.0, 0.90, -2.75, 0.00),
             (RAD * 1.25, 0.91, -2.50, 0.15),
             (1300, 0.90, -2.15, 0.50),

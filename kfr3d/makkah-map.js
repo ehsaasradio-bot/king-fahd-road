@@ -758,6 +758,117 @@ function emitHaram(b) {
   });
 }
 
+/* point-in-ring, for tiling a roof only where the building actually is */
+function ringHas(ring, x, z) {
+  var n = ring.length, c = false;
+  for (var i = 0; i < n; i++) {
+    var j = (i - 1 + n) % n;
+    if ((ring[i].y > z) !== (ring[j].y > z) &&
+        x < (ring[j].x - ring[i].x) * (z - ring[i].y) / (ring[j].y - ring[i].y + 1e-9) + ring[i].x) {
+      c = !c;
+    }
+  }
+  return c;
+}
+
+/* Al-Masjid an-Nabawi: an arcaded rectangle under a field of small domes to the
+   south and the square canopies of the newer courts to the north, with tall
+   minarets at the corners. */
+function emitNabawi(b) {
+  var H = b.h;
+  emitPrism({ o: b.o, i: b.i, h: H, c: 'mq', n: b.n });
+
+  var ring = ringFromFlat(b.o), n = ring.length, i;
+  var minx = 1e9, maxx = -1e9, minz = 1e9, maxz = -1e9, per = 0;
+  for (i = 0; i < n; i++) {
+    var p = ring[i], q = ring[(i + 1) % n];
+    if (p.x < minx) minx = p.x; if (p.x > maxx) maxx = p.x;
+    if (p.y < minz) minz = p.y; if (p.y > maxz) maxz = p.y;
+    per += Math.sqrt((q.x - p.x) * (q.x - p.x) + (q.y - p.y) * (q.y - p.y));
+  }
+
+  // arcade of arched bays, two storeys of it
+  for (var k = 1; k <= 2; k++) {
+    var y = H * k / 3;
+    for (i = 0; i < n; i++) {
+      var p1 = ring[i], q1 = ring[(i + 1) % n];
+      gridLines.push(p1.x, y, p1.y, q1.x, y, q1.y);
+    }
+  }
+  alongRing(ring, 10, 0, function (x, z) { gridLines.push(x, 0, z, x, H, z); });
+
+  // the roof: a bay grid, domed over the old prayer hall, canopied over the
+  // courts added later
+  var CELL = 34, M = new THREE.Matrix4();
+  for (var gx = minx + CELL * 0.5; gx < maxx; gx += CELL) {
+    for (var gz = minz + CELL * 0.5; gz < maxz; gz += CELL) {
+      if (!ringHas(ring, gx, gz)) continue;
+      if (gz > 0) {                                  // south: domes
+        M.makeTranslation(gx, H, gz);
+        bakeGeo(new THREE.SphereGeometry(8, 10, 5, 0, Math.PI * 2, 0, Math.PI / 2),
+                M, C.mqWallA, C.mqWallB, MQ_ROOF, 26);
+        edgeMain.push(gx, H + 8, gz, gx, H + 10.4, gz);
+      } else {                                       // north: square canopies
+        var s = CELL * 0.42, y2 = H + 4.5;
+        M.makeTranslation(gx, H + 2.4, gz);
+        bakeGeo(new THREE.BoxGeometry(s * 2, 4.2, s * 2), M, C.mqWallA, C.mqWallB, MQ_ROOF, 20);
+        gridLines.push(gx - s, y2, gz - s, gx + s, y2, gz + s);
+        gridLines.push(gx - s, y2, gz + s, gx + s, y2, gz - s);
+      }
+    }
+  }
+
+  // ten minarets, evenly around the wall
+  var step = per / 10;
+  alongRing(ring, step, step * 0.5, function (x, z) {
+    var dx = -x, dz = -z, L = Math.sqrt(dx * dx + dz * dz) || 1;
+    emitMinaret(x + dx / L * 6, z + dz / L * 6, 105);
+  });
+}
+
+/* The Green Dome over the Rawdah \u2014 it stands on the mosque roof, not the
+   ground, so it is lifted onto whatever the mosque's own height is. */
+var nabawiRoof = (function () {
+  for (var i = 0; i < DATA.buildings.length; i++) {
+    if (DATA.buildings[i].n === "Prophet's Mosque") return DATA.buildings[i].h;
+  }
+  return 0;
+})();
+
+function emitRoofDome(b) {
+  var ring = ringFromFlat(b.o), cen = ringCentroid(ring), H = b.h;
+  var r = 0;
+  for (var i = 0; i < ring.length; i++) {
+    var dx = ring[i].x - cen[0], dz = ring[i].y - cen[1];
+    r = Math.max(r, Math.sqrt(dx * dx + dz * dz));
+  }
+  var base = nabawiRoof, M = new THREE.Matrix4();
+  var drum = H * 0.62, dr = r * 1.3;
+
+  M.makeTranslation(cen[0], base + drum / 2, cen[1]);
+  bakeGeo(new THREE.CylinderGeometry(dr * 0.92, dr, drum, 16), M, C.mqWallA, C.mqWallB, MQ_ROOF, 24);
+  M.makeTranslation(cen[0], base + drum, cen[1]);
+  bakeGeo(new THREE.SphereGeometry(dr, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+          M, C.mqWallA, C.mqWallB, MQ_ROOF, 22);
+  // ribs, the way the dome is actually built
+  for (var k = 0; k < 16; k++) {
+    var a = k / 16 * Math.PI * 2, seg = [];
+    for (var s = 0; s <= 6; s++) {
+      var t = s / 6 * Math.PI / 2;
+      seg.push([cen[0] + Math.cos(a) * dr * Math.cos(t), base + drum + dr * Math.sin(t),
+                cen[1] + Math.sin(a) * dr * Math.cos(t)]);
+    }
+    for (var j = 0; j < 6; j++) {
+      gridLines.push(seg[j][0], seg[j][1], seg[j][2], seg[j + 1][0], seg[j + 1][1], seg[j + 1][2]);
+    }
+  }
+  var top = base + drum + dr;
+  M.makeTranslation(cen[0], top + dr * 0.16, cen[1]);       // lantern
+  bakeGeo(new THREE.CylinderGeometry(dr * 0.13, dr * 0.17, dr * 0.32, 8),
+          M, C.mqWallA, C.mqWallB, MQ_ROOF, 24);
+  edgeMain.push(cen[0], top + dr * 0.32, cen[1], cen[0], top + dr * 0.7, cen[1]);
+}
+
 /* The Kaaba: the cube on its plinth, ringed by the mataf. */
 function emitKaaba(b) {
   var ring = ringFromFlat(b.o), cen = ringCentroid(ring), H = b.h;
@@ -806,7 +917,10 @@ var CUSTOM = {
   'Al Rahmah Mosque': emitFloatingMosque,
   'Al-Masjid al-Haram': emitHaram,
   'Great Mosque of Mecca': emitHaram,
-  'Kaaba': emitKaaba
+  'Kaaba': emitKaaba,
+  "Prophet's Mosque": emitNabawi,
+  'Green Dome': emitRoofDome,
+  'White Dome': emitRoofDome
 };
 
 function flatCentroid(flat) {
@@ -834,7 +948,8 @@ function isKafdCrystal(b) {
 /* landmarks that are short by nature \u2014 the height gate must not skip them */
 var CUSTOM_ANY_HEIGHT = {
   'Island Mosque': 1, 'Al-Rahmah Mosque': 1, 'Al Rahmah Mosque': 1,
-  'Al-Masjid al-Haram': 1, 'Great Mosque of Mecca': 1, 'Kaaba': 1
+  'Al-Masjid al-Haram': 1, 'Great Mosque of Mecca': 1, 'Kaaba': 1,
+  "Prophet's Mosque": 1, 'Green Dome': 1, 'White Dome': 1
 };
 
 function buildBuilding(b, idx) {
