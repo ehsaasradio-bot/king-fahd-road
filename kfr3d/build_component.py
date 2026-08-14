@@ -30,6 +30,16 @@ style = re.sub(
     ' background: radial-gradient(120% 90% at 50% 0%, #ffffff 55%, #f3f4fb 100%); }',
     style)
 
+# The template carries Riyadh's copy; every other city must say its own name.
+_meta = json.load(open(SCENE)).get('meta', {})
+_city = _meta.get('city', 'Riyadh')
+_spine = _meta.get('spine', 'King Fahd Road')
+body = body.replace('Riyadh &middot; Saudi Arabia', _city + ' &middot; Saudi Arabia')
+body = body.replace('Riyadh · Saudi Arabia', _city + ' · Saudi Arabia')
+body = body.replace('<h1>King Fahd Road</h1>', '<h1>' + _spine + '</h1>')
+body = body.replace('>King Fahd Rd<', '>' + (_spine if len(_spine) <= 16 else _spine[:15] + '\u2026') + '<')
+body = body.replace('Drawing Riyadh', 'Drawing ' + _city)
+
 template = '<style>' + style + '</style>' + body
 
 app = open('kfr3d/app.js').read()

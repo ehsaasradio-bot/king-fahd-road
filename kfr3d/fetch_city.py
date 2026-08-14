@@ -15,6 +15,18 @@ CITIES = {
         'tiles': (5, 3),
         'coast': True,
     },
+    'madinah': {
+        # radial: everything within ~2 km of the Prophet's Mosque
+        'bbox': (24.4507, 39.5914, 24.4867, 39.6310),
+        'tiles': (4, 3),
+        'coast': False,
+    },
+    'makkah2': {
+        # radial: everything within ~2 km of the Grand Mosque
+        'bbox': (21.4067, 39.8047, 21.4427, 39.8433),
+        'tiles': (4, 3),
+        'coast': False,
+    },
     'makkah': {
         # Ibrahim Al Khalil Road, running past the Haram
         'bbox': (21.385, 39.795, 21.455, 39.860),

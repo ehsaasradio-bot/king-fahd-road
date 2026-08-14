@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dammam — Drawn from Real Data</title>
+<title>Madinah — Drawn from Real Data</title>
 
-<script src="dammam-map.js" defer></script>
+<script src="madinah-map.js" defer></script>
 <script src="gsap.min.js" defer></script>
 <script src="ScrollTrigger.min.js" defer></script>
 
@@ -89,39 +89,39 @@
 
 <section id="act">
   <div id="stage">
-    <dammam-map id="map" sidebar="off" interactive="off"></dammam-map>
+    <madinah-map id="map" sidebar="off" interactive="off"></madinah-map>
 
     <div class="copy">
       <div class="scrim"></div>
-      <div class="eyebrow">Arabian Gulf &middot; 26.43&deg; N</div>
+      <div class="eyebrow">Hejaz &middot; 24.47&deg; N</div>
       <h1 id="title"></h1>
-      <p class="sub">A city drawn from the Gulf &mdash; 6160 real buildings along King Saud Street and the corniche.</p>
+      <p class="sub">The city around the Prophet's Mosque &mdash; 489 real buildings, and the roads that lead to it.</p>
     </div>
     <div class="cue"><i></i>Scroll</div>
 
     <div class="card" data-card data-in="4.2" data-out="5.4">
-      <div class="tag">King Saud Street &middot; 01</div>
-      <h2>Balhamer Business Gate</h2>
-      <div class="fig"><span data-count="85">0</span><em>&nbsp;m</em></div>
-      <p>Rising over King Saud Street.</p>
+      <div class="tag">Al-Masjid an-Nabawi &middot; 01</div>
+      <h2>Al-Masjid an-Nabawi</h2>
+      <div class="fig"><span data-count="489">0</span><em>&nbsp;bldgs</em></div>
+      <p>The city packed in around it, every footprint real.</p>
     </div>
     <div class="card right" data-card data-in="5.8" data-out="7.0">
-      <div class="tag">King Saud Street &middot; 02</div>
-      <h2>Sheraton Dammam Hotel & Convention Centre</h2>
-      <div class="fig"><span data-count="70">0</span><em>&nbsp;m</em></div>
-      <p>Rising over King Saud Street.</p>
+      <div class="tag">Al-Masjid an-Nabawi &middot; 02</div>
+      <h2>Al-Jazera Al-Hijazia</h2>
+      <div class="fig"><span data-count="52">0</span><em>&nbsp;m</em></div>
+      <p>Standing over the approach.</p>
     </div>
     <div class="card" data-card data-in="7.4" data-out="8.6">
-      <div class="tag">King Saud Street &middot; 03</div>
-      <h2>Nobles</h2>
-      <div class="fig"><span data-count="24">0</span><em>&nbsp;m</em></div>
-      <p>Rising over King Saud Street.</p>
+      <div class="tag">Al-Masjid an-Nabawi &middot; 03</div>
+      <h2>As'saafa Golden Hotel</h2>
+      <div class="fig"><span data-count="42">0</span><em>&nbsp;m</em></div>
+      <p>Standing over the approach.</p>
     </div>
     <div class="card right" data-card data-in="9.0" data-out="10.4">
-      <div class="tag">King Saud Street &middot; 04</div>
-      <h2>The Corridor</h2>
-      <div class="fig"><span data-count="6160">0</span><em>&nbsp;bldgs</em></div>
-      <p>Every footprint here is real, drawn from OpenStreetMap.</p>
+      <div class="tag">Al-Masjid an-Nabawi &middot; 04</div>
+      <h2>The Approach</h2>
+      <div class="fig"><span data-count="440">0</span><em>&nbsp;ways</em></div>
+      <p>Every road here runs toward the same place.</p>
     </div>
 
     <div id="rail" aria-hidden="true">
@@ -133,11 +133,11 @@
 <section id="explore">
   <h2>Now <span>you</span> explore</h2>
   <div class="note">Drag &middot; scroll &middot; hover &middot; fly to any landmark</div>
-  <dammam-map id="exploreMap"></dammam-map>
+  <madinah-map id="exploreMap"></madinah-map>
 </section>
 
 <footer>
-  <span>Dammam &middot; <a href="index.html">riyadh &rarr;</a> &middot; <a href="jeddah.html">jeddah &rarr;</a> &middot; <a href="makkah.html">makkah &rarr;</a> &middot; <a href="madinah.html">madinah &rarr;</a></span>
+  <span>Madinah &middot; <a href="index.html">riyadh &rarr;</a> &middot; <a href="jeddah.html">jeddah &rarr;</a> &middot; <a href="makkah.html">makkah &rarr;</a> &middot; <a href="dammam.html">dammam &rarr;</a></span>
   <span>data <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">&copy; OpenStreetMap contributors</a> &middot; heights estimated where untagged</span>
 </footer>
 
@@ -149,7 +149,7 @@ window.addEventListener('load', function () {
   var stage = document.getElementById('stage');
 
   var title = document.getElementById('title');
-  'Dammam'.toUpperCase().split('').forEach(function (c) {
+  'Madinah'.toUpperCase().split('').forEach(function (c) {
     var s = document.createElement('span'); s.className = 'ch'; s.textContent = c; title.appendChild(s);
   });
   var d = document.createElement('span'); d.className = 'ch dot'; d.textContent = '.'; title.appendChild(d);

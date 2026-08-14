@@ -7,6 +7,27 @@
 import json, math, hashlib, sys, os
 
 CITIES = {
+    'madinah': {
+        'label': 'Madinah',
+        'spine': "Al-Masjid an-Nabawi",
+        'spine_keys': (),
+        'coast': False,
+        'focus': (24.46865, 39.61117, "Prophet's Mosque"),   # lat, lon, name
+        'radius': 1700,
+        'overrides': {"Prophet's Mosque": 42.0},
+        'ride': [],
+    },
+    'makkah2': {
+        'label': 'Makkah',
+        'spine': 'Al-Masjid al-Haram',
+        'spine_keys': (),
+        'coast': False,
+        'focus': (21.42470, 39.82400, 'Grand Mosque of Mecca'),
+        'radius': 1700,
+        'overrides': {'Grand Mosque of Mecca': 60.0, 'The Clock Towers': 601.0,
+                      'Abraj Al Bait': 601.0},
+        'ride': [],
+    },
     'dammam': {
         'label': 'Dammam',
         'spine': 'King Saud Street',
@@ -54,15 +75,22 @@ for e in rj:
         for g in e.get('geometry') or []:
             if g:
                 spine_pts.append((g['lon'], g['lat']))
-if not spine_pts:
+if not spine_pts and not cfg.get('focus'):
     print('!! spine not found, centring on all roads')
     for e in rj:
         for g in (e.get('geometry') or [])[:4]:
             if g:
                 spine_pts.append((g['lon'], g['lat']))
+if not spine_pts:
+    spine_pts = [(lon, lat) for lat, lon in [(cfg['focus'][0], cfg['focus'][1])]] \
+        if cfg.get('focus') else spine_pts
 
-lat0 = sum(p[1] for p in spine_pts) / len(spine_pts)
-lon0 = sum(p[0] for p in spine_pts) / len(spine_pts)
+FOCUS = cfg.get('focus')
+if FOCUS:
+    lat0, lon0 = FOCUS[0], FOCUS[1]      # the mosque is the origin
+else:
+    lat0 = sum(p[1] for p in spine_pts) / len(spine_pts)
+    lon0 = sum(p[0] for p in spine_pts) / len(spine_pts)
 KX = 111320.0 * math.cos(math.radians(lat0))
 KZ = 110574.0
 
@@ -177,6 +205,20 @@ def stitch(parts):
     return rings
 
 
+# Some subjects are mapped without a building tag — the Grand Mosque is a bare
+# relation — so a focus city can name extra elements to fold in.
+import os as _os
+_extra = '%s_mosque.json' % CITY
+if _os.path.exists(_extra):
+    _n = 0
+    for e in json.load(open(_extra))['elements']:
+        t = dict(e.get('tags') or {})
+        t.setdefault('building', 'mosque')
+        e['tags'] = t
+        bj.append(e)
+        _n += 1
+    print('  folded in %d extra element(s) from %s' % (_n, _extra))
+
 # ---------- buildings ----------
 buildings = []
 for e in bj:
@@ -220,6 +262,19 @@ for e in bj:
 # ---------- keep only the corridor along the spine ----------
 # A whole-metro bbox runs to tens of thousands of buildings; these scenes are
 # corridors, so drop anything further than `corridor` metres from the spine.
+RAD = cfg.get('radius')
+if cfg.get('focus') and RAD:
+    # radial city: keep what stands around the mosque, drop the rest
+    before = len(buildings)
+    kept = []
+    for b in buildings:
+        xs, zs = b['o'][0::2], b['o'][1::2]
+        cx0, cz0 = sum(xs) / len(xs), sum(zs) / len(zs)
+        if cx0 * cx0 + cz0 * cz0 <= RAD * RAD:
+            kept.append(b)
+    buildings = kept
+    print('  radius %dm: %d -> %d buildings' % (RAD, before, len(buildings)))
+
 R = cfg.get('corridor')
 if R:
     CELL = 250.0
@@ -387,44 +442,78 @@ for i, n in enumerate(top):
     presets[key] = {'label': n[:16], 'tx': round(x), 'tz': round(z),
                     'azim': -0.7 + 0.2 * i, 'elev': 0.5, 'size': SZ[i]}
 
-# The ride: down the spine, south to north — but only across the stretch that
-# actually has a city on it. Spines run far past the mapped area, and the thin
-# ends would open the story on empty desert, so rank each point by how much
-# city surrounds it and keep the dense run.
-DCELL = 200.0
-_dgrid = {}
-for _b in buildings:
-    _xs, _zs = _b['o'][0::2], _b['o'][1::2]
-    _k = (int((sum(_xs) / len(_xs)) // DCELL), int((sum(_zs) / len(_zs)) // DCELL))
-    _dgrid[_k] = _dgrid.get(_k, 0) + 1
+# The ride. A focus city has no spine to travel: the mosque is the subject, so
+# the camera circles inward onto it instead of running along a road.
+if cfg.get('focus'):
+    NAME = cfg['focus'][2]
+    mb = named.get(NAME)
+    if mb:
+        mx0, mz0 = centroid(mb)
+    else:
+        mx0, mz0 = 0.0, 0.0          # the mosque is the projection origin
+        print('  !! %s not found by name, using the origin' % NAME)
 
+    presets = {
+        'mosque':   {'label': cfg['spine'][:16], 'tx': round(mx0), 'tz': round(mz0),
+                     'azim': -0.6, 'elev': 0.55, 'size': 420},
+        'approach': {'label': 'Approach', 'tx': round(mx0), 'tz': round(mz0),
+                     'azim': -0.2, 'elev': 0.45, 'size': 1100},
+        'overview': {'label': 'The City', 'tx': round(mx0), 'tz': round(mz0),
+                     'azim': -0.9, 'elev': 0.95, 'size': round(RAD * 2.1)},
+    }
 
-def _density(p):
-    gx, gz = int(p[0] // DCELL), int(p[1] // DCELL)
-    n = 0
-    for a in range(gx - 3, gx + 4):
-        for b in range(gz - 3, gz + 4):
-            n += _dgrid.get((a, b), 0)
-    return n
-
-
-_pts = [(p, _density(p)) for p in (prj(*q) for q in spine_pts)]
-_live = [d for _, d in _pts if d > 0]
-_floor = max(8, (sorted(_live)[len(_live) // 2] * 0.35) if _live else 0)
-spine_local = [p for p, d in _pts if d >= _floor]
-if len(spine_local) < 4:
-    spine_local = [p for p, _ in _pts]
-    print('  !! spine has little city on it, using it whole')
+    # four steps of a spiral: wide and high, turning as it drops and closes in
+    # the closing frame has to hold the whole complex — these mosques are
+    # several hundred metres across, so stopping at 330m only showed a slab
+    SPIRAL = [
+        (RAD * 2.0, 0.95, -1.25),
+        (RAD * 1.3, 0.80, -0.85),
+        (1250, 0.64, -0.45),
+        (780, 0.52, -0.10),
+    ]
+    anchors = []
+    for i, (size, elev, azim) in enumerate(SPIRAL):
+        anchors.append({'tx': round(mx0), 'tz': round(mz0),
+                        'azim': azim, 'elev': elev, 'size': round(size)})
 else:
-    print('  ride spans %d of %d spine points (density floor %d)'
-          % (len(spine_local), len(_pts), _floor))
-spine_local = sorted(spine_local, key=lambda p: -p[1])
-anchors = []
-for i in range(4):
-    p = spine_local[int((len(spine_local) - 1) * i / 3)]
-    anchors.append({'tx': round(p[0]), 'tz': round(p[1]),
-                    'azim': -0.9 + 0.5 * i / 3, 'elev': 0.46 + 0.1 * i / 3,
-                    'size': [1600, 1300, 1100, 900][i]})
+    # The ride: down the spine, south to north — but only across the stretch that
+    # actually has a city on it. Spines run far past the mapped area, and the thin
+    # ends would open the story on empty desert, so rank each point by how much
+    # city surrounds it and keep the dense run.
+    DCELL = 200.0
+    _dgrid = {}
+    for _b in buildings:
+        _xs, _zs = _b['o'][0::2], _b['o'][1::2]
+        _k = (int((sum(_xs) / len(_xs)) // DCELL), int((sum(_zs) / len(_zs)) // DCELL))
+        _dgrid[_k] = _dgrid.get(_k, 0) + 1
+
+
+    def _density(p):
+        gx, gz = int(p[0] // DCELL), int(p[1] // DCELL)
+        n = 0
+        for a in range(gx - 3, gx + 4):
+            for b in range(gz - 3, gz + 4):
+                n += _dgrid.get((a, b), 0)
+        return n
+
+
+    _pts = [(p, _density(p)) for p in (prj(*q) for q in spine_pts)]
+    _live = [d for _, d in _pts if d > 0]
+    _floor = max(8, (sorted(_live)[len(_live) // 2] * 0.35) if _live else 0)
+    spine_local = [p for p, d in _pts if d >= _floor]
+    if len(spine_local) < 4:
+        spine_local = [p for p, _ in _pts]
+        print('  !! spine has little city on it, using it whole')
+    else:
+        print('  ride spans %d of %d spine points (density floor %d)'
+              % (len(spine_local), len(_pts), _floor))
+    spine_local = sorted(spine_local, key=lambda p: -p[1])
+    anchors = []
+    for i in range(4):
+        p = spine_local[int((len(spine_local) - 1) * i / 3)]
+        anchors.append({'tx': round(p[0]), 'tz': round(p[1]),
+                        'azim': -0.9 + 0.5 * i / 3, 'elev': 0.46 + 0.1 * i / 3,
+                        'size': [1600, 1300, 1100, 900][i]})
 
 for i, a in enumerate(anchors):
     r = a['size'] * 0.6
@@ -435,6 +524,7 @@ for i, a in enumerate(anchors):
 
 scene = {
     'meta': {'city': cfg['label'], 'spine': cfg['spine'],
+             'focus': (cfg['focus'][2] if cfg.get('focus') else None),
              'center': [round(lat0, 6), round(lon0, 6)],
              'attribution': '© OpenStreetMap contributors'},
     'buildings': buildings, 'roads': roads, 'water': water,

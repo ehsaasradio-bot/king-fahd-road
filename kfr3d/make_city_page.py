@@ -12,31 +12,51 @@ LABEL = meta['city']
 SPINE = meta['spine']
 TAG = '%s-map' % CITY
 
+ALL_CITIES = [('riyadh', 'index.html'), ('jeddah', 'jeddah.html'),
+              ('makkah', 'makkah.html'), ('madinah', 'madinah.html'),
+              ('dammam', 'dammam.html')]
+
 PAGE = {
     'dammam': {
         'eyebrow': 'Arabian Gulf &middot; 26.43&deg; N',
         'sub': 'A city drawn from the Gulf &mdash; %d real buildings along King Saud Street and the corniche.',
-        'nav': [('riyadh', 'index.html'), ('jeddah', 'jeddah.html'), ('makkah', 'makkah.html')],
     },
     'makkah': {
         'eyebrow': 'Hejaz &middot; 21.42&deg; N',
-        'sub': 'A city drawn from the valley &mdash; %d real buildings along Ibrahim Al Khalil Road.',
-        'nav': [('riyadh', 'index.html'), ('jeddah', 'jeddah.html'), ('dammam', 'dammam.html')],
+        'sub': 'The city around the Grand Mosque &mdash; %d real buildings, and the roads that lead to it.',
+    },
+    'madinah': {
+        'eyebrow': 'Hejaz &middot; 24.47&deg; N',
+        'sub': "The city around the Prophet's Mosque &mdash; %d real buildings, and the roads that lead to it.",
     },
 }[CITY]
+PAGE['nav'] = [(n, h) for n, h in ALL_CITIES if n != CITY]
 
 cards = scene.get('cards') or []
 nb = len(scene['buildings'])
 
-# chapter cards: the three tallest named landmarks, then the corridor itself
 named = [b for b in scene['buildings'] if b.get('lb')]
 named.sort(key=lambda b: -b['h'])
+FOCUS = meta.get('focus')
 chapters = []
-for b in named[:3]:
-    chapters.append((b['n'], str(int(round(b['h']))), 'm',
-                     'Rising over %s.' % SPINE))
-chapters.append(('The Corridor', str(nb), 'bldgs',
-                 'Every footprint here is real, drawn from OpenStreetMap.'))
+
+if FOCUS:
+    # a focus city is about the mosque, so it leads — and every figure below is
+    # counted from the scene itself rather than asserted
+    mosques = sum(1 for b in scene['buildings'] if b['c'] == 'mq')
+    chapters.append((SPINE, str(nb), 'bldgs',
+                     'The city packed in around it, every footprint real.'))
+    for b in named[:2]:
+        chapters.append((b['n'], str(int(round(b['h']))), 'm',
+                         'Standing over the approach.'))
+    chapters.append(('The Approach', str(len(scene['roads'])), 'ways',
+                     'Every road here runs toward the same place.'))
+else:
+    for b in named[:3]:
+        chapters.append((b['n'], str(int(round(b['h']))), 'm',
+                         'Rising over %s.' % SPINE))
+    chapters.append(('The Corridor', str(nb), 'bldgs',
+                     'Every footprint here is real, drawn from OpenStreetMap.'))
 
 WINDOWS = [(4.2, 5.4), (5.8, 7.0), (7.4, 8.6), (9.0, 10.4)]
 
