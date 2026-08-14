@@ -13,7 +13,7 @@ CITIES = {
         'spine_keys': (),
         'coast': False,
         'focus': (24.46865, 39.61117, "Prophet's Mosque"),   # lat, lon, name
-        'radius': 1700,
+        'radius': 2400,
         'overrides': {"Prophet's Mosque": 42.0},
         'ride': [],
     },
@@ -23,7 +23,7 @@ CITIES = {
         'spine_keys': (),
         'coast': False,
         'focus': (21.42470, 39.82400, 'Grand Mosque of Mecca'),
-        'radius': 1700,
+        'radius': 2400,
         'overrides': {'Grand Mosque of Mecca': 60.0, 'The Clock Towers': 601.0,
                       'Abraj Al Bait': 601.0},
         'ride': [],
