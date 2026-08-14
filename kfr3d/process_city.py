@@ -22,10 +22,12 @@ CITIES = {
         'spine': 'Al-Masjid al-Haram',
         'spine_keys': (),
         'coast': False,
-        'focus': (21.42470, 39.82400, 'Grand Mosque of Mecca'),
+        'rename': {'Great Mosque of Mecca': 'Al-Masjid al-Haram'},
+        'focus': (21.42470, 39.82400, 'Al-Masjid al-Haram'),
+        'land': (21.422487, 39.826206, 'Kaaba'),
         'radius': 2400,
-        'overrides': {'Grand Mosque of Mecca': 60.0, 'The Clock Towers': 601.0,
-                      'Abraj Al Bait': 601.0},
+        'overrides': {'Al-Masjid al-Haram': 45.0, 'Kaaba': 13.1,
+                      'The Clock Towers': 601.0, 'Abraj Al Bait': 601.0},
         'ride': [],
     },
     'dammam': {
@@ -137,7 +139,8 @@ def parse_levels(v):
 
 
 def bname(t):
-    return t.get('name:en') or t.get('name') or ''
+    n = t.get('name:en') or t.get('name') or ''
+    return cfg.get('rename', {}).get(n, n)
 
 
 def height_for(t, area, key):
@@ -184,25 +187,53 @@ def category(t, h, name):
 
 
 def stitch(parts):
-    segs = [list(map(tuple, p)) for p in parts]
+    """Join multipolygon member ways into closed rings.
+
+    Walks from each free end through an endpoint index. The old pairwise scan
+    could close a sub-loop early and then throw the leftover chain away — on
+    Al-Masjid al-Haram that quietly deleted the half of the mosque the Kaaba
+    stands in.
+    """
+    segs = [list(map(tuple, p)) for p in parts if len(p) >= 2]
+    ends = {}
+    for i, s in enumerate(segs):
+        if s[0] == s[-1]:
+            continue                      # already a ring
+        ends.setdefault(s[0], []).append(i)
+        ends.setdefault(s[-1], []).append(i)
+    used = [False] * len(segs)
     rings = []
-    while segs:
-        cur = segs.pop(0)
-        changed = True
-        while changed and cur[0] != cur[-1]:
-            changed = False
-            for i, s in enumerate(segs):
-                if s[0] == cur[-1]:
-                    cur += s[1:]; segs.pop(i); changed = True; break
-                if s[-1] == cur[-1]:
-                    cur += list(reversed(s))[1:]; segs.pop(i); changed = True; break
-                if s[-1] == cur[0]:
-                    cur = s + cur[1:]; segs.pop(i); changed = True; break
-                if s[0] == cur[0]:
-                    cur = list(reversed(s)) + cur[1:]; segs.pop(i); changed = True; break
+    for i, s in enumerate(segs):
+        if used[i]:
+            continue
+        used[i] = True
+        if s[0] == s[-1]:
+            rings.append(s)
+            continue
+        cur = list(s)
+        while cur[0] != cur[-1]:
+            nxt = [j for j in ends.get(cur[-1], ()) if not used[j]]
+            if not nxt:
+                break
+            j = nxt[0]
+            used[j] = True
+            t2 = segs[j]
+            cur += (t2[1:] if t2[0] == cur[-1] else list(reversed(t2))[1:])
         if cur[0] == cur[-1] and len(cur) >= 4:
             rings.append(cur)
     return rings
+
+
+def ring_contains(ring, pt):
+    px, pz = pt
+    n, c = len(ring), False
+    for i in range(n):
+        j = (i - 1) % n
+        if ((ring[i][1] > pz) != (ring[j][1] > pz)) and (
+                px < (ring[j][0] - ring[i][0]) * (pz - ring[i][1])
+                / (ring[j][1] - ring[i][1] + 1e-12) + ring[i][0]):
+            c = not c
+    return c
 
 
 # Some subjects are mapped without a building tag — the Grand Mosque is a bare
@@ -211,13 +242,29 @@ import os as _os
 _extra = '%s_mosque.json' % CITY
 if _os.path.exists(_extra):
     _n = 0
+    _have = set((e.get('type'), e.get('id')) for e in bj)
     for e in json.load(open(_extra))['elements']:
+        if (e.get('type'), e.get('id')) in _have:
+            continue                      # already came back with the buildings
         t = dict(e.get('tags') or {})
         t.setdefault('building', 'mosque')
         e['tags'] = t
         bj.append(e)
         _n += 1
     print('  folded in %d extra element(s) from %s' % (_n, _extra))
+
+# Tiles overlap, so the same way can arrive several times. Left in, it draws
+# twice and shows up twice in the landmark list.
+_seen, _dedup = set(), []
+for e in bj:
+    k = (e.get('type'), e.get('id'))
+    if k[1] is not None and k in _seen:
+        continue
+    _seen.add(k)
+    _dedup.append(e)
+if len(_dedup) != len(bj):
+    print('  dropped %d duplicate element(s)' % (len(bj) - len(_dedup)))
+bj = _dedup
 
 # ---------- buildings ----------
 buildings = []
@@ -227,37 +274,48 @@ for e in bj:
     if e.get('type') == 'way':
         if not geom:
             continue
-        rings_ll = [[(g['lon'], g['lat']) for g in geom if g]]
+        outer_ll = [[(g['lon'], g['lat']) for g in geom if g]]
+        inner_ll = []
     else:
-        outers = [[(g['lon'], g['lat']) for g in m.get('geometry') or [] if g]
-                  for m in e.get('members', []) if m.get('role') == 'outer']
-        outers = [o for o in outers if len(o) >= 3]
-        if not outers:
+        outer_ll = [[(g['lon'], g['lat']) for g in m.get('geometry') or [] if g]
+                    for m in e.get('members', []) if m.get('role') == 'outer']
+        inner_ll = [[(g['lon'], g['lat']) for g in m.get('geometry') or [] if g]
+                    for m in e.get('members', []) if m.get('role') == 'inner']
+        # keep two-node members: they are legitimate links in a ring, and
+        # dropping them snaps the chain and loses everything past the gap
+        outer_ll = [o for o in outer_ll if len(o) >= 2]
+        if not outer_ll:
             continue
-        rings_ll = stitch(outers) or outers
-    rings = [simplify([prj(*p) for p in r]) for r in rings_ll]
-    rings = [r for r in rings if len(r) >= 3]
-    if not rings:
-        continue
-    rings.sort(key=lambda r: -abs(ring_area(r + [r[0]])))
-    outer, holes = rings[0], rings[1:]
-    area = abs(ring_area(outer + [outer[0]]))
-    if area < 25:
-        continue
-    if ring_area(outer + [outer[0]]) < 0:
-        outer = outer[::-1]
-    holes = [h[::-1] if ring_area(h + [h[0]]) > 0 else h for h in holes]
+        outer_ll = stitch(outer_ll) or outer_ll
+        inner_ll = stitch([i for i in inner_ll if len(i) >= 2])
 
+    outers = [r for r in (simplify([prj(*p) for p in r]) for r in outer_ll) if len(r) >= 3]
+    inners = [r for r in (simplify([prj(*p) for p in r]) for r in inner_ll) if len(r) >= 3]
+    if not outers:
+        continue
+
+    # A multipolygon can hold several disjoint outer rings — Al-Masjid al-Haram
+    # is three. Keeping only the largest threw away the half holding the Kaaba,
+    # so each outer ring becomes its own part and takes the holes it contains.
+    outers.sort(key=lambda r: -abs(ring_area(r + [r[0]])))
     name = bname(t)
-    key = e.get('id') or name or area
-    h = height_for(t, area, key)
-    b = {'h': round(h, 1), 'c': category(t, h, name),
-         'o': [c for pt in outer for c in pt]}
-    if holes:
-        b['i'] = [[c for pt in hh for c in pt] for hh in holes]
-    if name:
-        b['n'] = name
-    buildings.append(b)
+    key = e.get('id') or name or len(buildings)
+    for oi, outer in enumerate(outers):
+        area = abs(ring_area(outer + [outer[0]]))
+        if area < 25:
+            continue
+        holes = [h for h in inners if ring_contains(outer, h[0])]
+        if ring_area(outer + [outer[0]]) < 0:
+            outer = outer[::-1]
+        holes = [h[::-1] if ring_area(h + [h[0]]) > 0 else h for h in holes]
+        h = height_for(t, area, key)
+        b = {'h': round(h, 1), 'c': category(t, h, name),
+             'o': [c for pt in outer for c in pt]}
+        if holes:
+            b['i'] = [[c for pt in hh for c in pt] for hh in holes]
+        if name:
+            b['n'] = name
+        buildings.append(b)
 
 # ---------- keep only the corridor along the spine ----------
 # A whole-metro bbox runs to tens of thousands of buildings; these scenes are
@@ -325,9 +383,27 @@ for b in sorted(cands, key=lambda b: -b['h']):
     seen.add(nm)
     labels.append(nm)
 labels = labels[:14]
-for b in buildings:
-    if b.get('n') in labels:
+# a focus city's subject leads its own list, however tall the hotels around it
+# are — otherwise the mosque the whole page is about carries no chip
+_lead = [n for n in ((cfg.get('focus') or (0, 0, None))[2],
+                     (cfg.get('land') or (0, 0, None))[2]) if n]
+labels = _lead + [n for n in labels if n not in _lead]
+labels = labels[:14]
+LANDPT = prj(cfg['land'][1], cfg['land'][0]) if cfg.get('land') else None
+
+
+def _chip_rank(b):
+    # biggest part wins — and deliberately not the part holding the landing
+    # point, or the mosque's chip would sit on top of the Kaaba at the close
+    return -foot(b)
+
+
+_chipped = set()
+for b in sorted(buildings, key=_chip_rank):
+    n = b.get('n')
+    if n in labels and n not in _chipped:   # one chip per name, on its best part
         b['lb'] = 1
+        _chipped.add(n)
 
 
 # ---------- roads ----------
@@ -453,6 +529,26 @@ if cfg.get('focus'):
         mx0, mz0 = 0.0, 0.0          # the mosque is the projection origin
         print('  !! %s not found by name, using the origin' % NAME)
 
+    # Where the drone finally sets down. The Kaaba is not the centroid of the
+    # mosque — the expansions pull that half a kilometre away — so the descent
+    # has to drift onto it rather than just zoom in on the middle.
+    LAND = cfg.get('land')
+    if LAND:
+        lx, lz = LANDPT
+        lb_ = named.get(LAND[2])
+        if lb_:
+            lx, lz = centroid(lb_)
+        # the mosque part the landing point actually stands in is the subject
+        for b in buildings:
+            if b.get('n') == NAME:
+                ring = list(zip(b['o'][0::2], b['o'][1::2]))
+                if ring_contains(ring, (lx, lz)):
+                    mx0, mz0 = centroid(b)
+                    break
+        print('  landing on %s at (%d, %d)' % (LAND[2], lx, lz))
+    else:
+        lx, lz = mx0, mz0
+
     presets = {
         'mosque':   {'label': cfg['spine'][:16], 'tx': round(mx0), 'tz': round(mz0),
                      'azim': -0.6, 'elev': 0.55, 'size': 420},
@@ -462,18 +558,33 @@ if cfg.get('focus'):
                      'azim': -0.9, 'elev': 0.95, 'size': round(RAD * 2.1)},
     }
 
-    # four steps of a spiral: wide and high, turning as it drops and closes in
-    # the closing frame has to hold the whole complex — these mosques are
-    # several hundred metres across, so stopping at 330m only showed a slab
+    # A spiral descent: wide and high, turning as it drops and closes in. The
+    # closing frame has to hold the whole complex — these mosques are several
+    # hundred metres across, so stopping at 330m only showed a slab.
+    # The fourth column is how far the aim has slid from the mosque as a whole
+    # onto the landing point, so the fall reads as a drone settling.
     SPIRAL = [
-        (RAD * 2.0, 0.95, -1.25),
-        (RAD * 1.3, 0.80, -0.85),
-        (1250, 0.64, -0.45),
-        (780, 0.52, -0.10),
+        (RAD * 2.0, 0.95, -1.25, 0.00),
+        (RAD * 1.3, 0.80, -0.85, 0.08),
+        (1250, 0.64, -0.45, 0.34),
+        (780, 0.52, -0.10, 0.70),
     ]
+    if LAND:
+        # A drone descent instead of a circling approach: the camera stays high
+        # and steep the whole way down, because Makkah's towers stand right on
+        # the mosque and a low angle just buries it behind the Clock Tower. The
+        # arc is held on the side the towers are not on.
+        SPIRAL = [
+            (RAD * 2.0, 0.90, -2.75, 0.00),
+            (RAD * 1.25, 0.91, -2.50, 0.15),
+            (1300, 0.90, -2.15, 0.50),
+            (700, 0.90, -1.86, 0.85),
+            (620, 0.92, -1.58, 0.98),     # the whole complex, held for a beat
+            (240, 0.86, -1.46, 1.00),     # down onto the Kaaba
+        ]
     anchors = []
-    for i, (size, elev, azim) in enumerate(SPIRAL):
-        anchors.append({'tx': round(mx0), 'tz': round(mz0),
+    for size, elev, azim, k in SPIRAL:
+        anchors.append({'tx': round(mx0 + (lx - mx0) * k), 'tz': round(mz0 + (lz - mz0) * k),
                         'azim': azim, 'elev': elev, 'size': round(size)})
 else:
     # The ride: down the spine, south to north — but only across the stretch that

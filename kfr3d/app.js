@@ -644,6 +644,142 @@ function emitFloatingMosque(b) {
   edgeMain.push(mx, mh + 2.6, mz, mx, mh + 6, mz);
 }
 
+/* ---- Makkah signatures ---- */
+
+/* walk a ring, calling back every `step` metres along it */
+function alongRing(ring, step, phase, cb) {
+  var n = ring.length, acc = phase || 0;
+  for (var i = 0; i < n; i++) {
+    var p = ring[i], q = ring[(i + 1) % n];
+    var dx = q.x - p.x, dz = q.y - p.y;
+    var L = Math.sqrt(dx * dx + dz * dz);
+    if (L < 1e-6) continue;
+    for (var d = step - acc; d < L; d += step) {
+      cb(p.x + dx * (d / L), p.y + dz * (d / L), dx / L, dz / L);
+    }
+    acc = (acc + L) % step;
+  }
+}
+
+function ringCentroid(ring) {
+  var sx = 0, sz = 0;
+  for (var i = 0; i < ring.length; i++) { sx += ring[i].x; sz += ring[i].y; }
+  return [sx / ring.length, sz / ring.length];
+}
+
+function pushCircle(out, cx, cz, r, y, seg) {
+  seg = seg || 64;
+  for (var i = 0; i < seg; i++) {
+    var a = i / seg * Math.PI * 2, b2 = (i + 1) / seg * Math.PI * 2;
+    out.push(cx + Math.cos(a) * r, y, cz + Math.sin(a) * r,
+             cx + Math.cos(b2) * r, y, cz + Math.sin(b2) * r);
+  }
+}
+
+/* one minaret: stepped base, shaft, balcony, tapered crown, finial */
+function emitMinaret(x, z, H) {
+  var M = new THREE.Matrix4();
+  var wa = C.mqWallA, wb = C.mqWallB;
+  var hBase = H * 0.21, hShaft = H * 0.47, hCrown = H * 0.19;
+  M.makeTranslation(x, hBase / 2, z);
+  bakeGeo(new THREE.BoxGeometry(7.4, hBase, 7.4), M, wa, wb, MQ_ROOF, 20);
+  M.makeTranslation(x, hBase + hShaft / 2, z);
+  bakeGeo(new THREE.CylinderGeometry(2.5, 3.3, hShaft, 8), M, wa, wb, MQ_ROOF, 24);
+  M.makeTranslation(x, hBase + hShaft, z);           // balcony
+  bakeGeo(new THREE.CylinderGeometry(4.4, 4.4, 2.4, 12), M, wa, wb, MQ_ROOF, 24);
+  M.makeTranslation(x, hBase + hShaft + 2.4 + hCrown / 2, z);
+  bakeGeo(new THREE.CylinderGeometry(1.7, 2.4, hCrown, 8), M, wa, wb, MQ_ROOF, 24);
+  var yc = hBase + hShaft + 2.4 + hCrown;
+  M.makeTranslation(x, yc + H * 0.07, z);
+  bakeGeo(new THREE.ConeGeometry(2.2, H * 0.14, 8), M, wa, wb, MQ_ROOF, 24);
+  edgeMain.push(x, yc + H * 0.14, z, x, H, z);       // finial
+}
+
+/* Al-Masjid al-Haram: the arcaded gallery ring, its roof domes and minarets.
+   The mosque arrives from OSM as three disjoint parts, so this runs per part
+   and sizes everything off that part's own perimeter. */
+function emitHaram(b) {
+  var H = b.h;
+  emitPrism({ o: b.o, i: b.i, h: H, c: 'mq', n: b.n });
+
+  var ring = ringFromFlat(b.o), n = ring.length, i;
+  var per = 0;
+  for (i = 0; i < n; i++) {
+    var p0 = ring[i], q0 = ring[(i + 1) % n];
+    per += Math.sqrt((q0.x - p0.x) * (q0.x - p0.x) + (q0.y - p0.y) * (q0.y - p0.y));
+  }
+  var cen = ringCentroid(ring);
+
+  // arcade: two storey bands and a bay rhythm, so the wall reads as galleries
+  for (var k = 1; k <= 2; k++) {
+    var y = H * k / 3;
+    for (i = 0; i < n; i++) {
+      var p1 = ring[i], q1 = ring[(i + 1) % n];
+      gridLines.push(p1.x, y, p1.y, q1.x, y, q1.y);
+    }
+  }
+  alongRing(ring, 11, 0, function (x, z) { gridLines.push(x, 0, z, x, H, z); });
+
+  // pull a point in off the wall, toward the middle of this part
+  function inset(x, z, by) {
+    var dx = cen[0] - x, dz = cen[1] - z;
+    var L = Math.sqrt(dx * dx + dz * dz) || 1;
+    return [x + dx / L * by, z + dz / L * by];
+  }
+
+  var M = new THREE.Matrix4();
+  alongRing(ring, 62, 31, function (x, z) {
+    var q = inset(x, z, 11);
+    M.makeTranslation(q[0], H, q[1]);
+    bakeGeo(new THREE.SphereGeometry(5.4, 10, 5, 0, Math.PI * 2, 0, Math.PI / 2),
+            M, C.mqWallA, C.mqWallB, MQ_ROOF, 26);
+    edgeMain.push(q[0], H + 5.4, q[1], q[0], H + 7.8, q[1]);
+  });
+
+  // minarets, spaced so even the smallest part carries a pair
+  var step = Math.max(240, per / Math.max(3, Math.round(per / 330)));
+  alongRing(ring, step, step * 0.5, function (x, z) {
+    var q = inset(x, z, 7);
+    emitMinaret(q[0], q[1], 89);
+  });
+}
+
+/* The Kaaba: the cube on its plinth, ringed by the mataf. */
+function emitKaaba(b) {
+  var ring = ringFromFlat(b.o), cen = ringCentroid(ring), H = b.h;
+  var M = new THREE.Matrix4();
+
+  // the mataf — concentric circles of tawaf worn into the marble
+  for (var r = 24; r <= 116; r += 23) pushCircle(edgeSoft, cen[0], cen[1], r, 0.2, 72);
+
+  // shadharwan: the sloped marble base the cube stands on
+  M.makeTranslation(cen[0], 1.1, cen[1]);
+  bakeGeo(new THREE.CylinderGeometry(13.5, 15.5, 2.2, 40), M, C.wallA, C.wallB, WHITE, 30);
+
+  // the cube itself, in its own dark tone so it holds the centre of the frame
+  var KA = 0x4A4E9E, KB = 0x272B70, KR = new THREE.Color(0x1B1E63);
+  var n = ring.length, i;
+  for (i = 0; i < n; i++) {
+    var p = ring[i], q = ring[(i + 1) % n];
+    var dx = q.x - p.x, dz = q.y - p.y, L = Math.sqrt(dx * dx + dz * dz) || 1;
+    var col = shade(KA, KB, dz / L, -dx / L);
+    pushTri(p.x, 2.2, p.y, q.x, 2.2, q.y, q.x, 2.2 + H, q.y, col);
+    pushTri(p.x, 2.2, p.y, q.x, 2.2 + H, q.y, p.x, 2.2 + H, p.y, col);
+    edgeMain.push(p.x, 2.2, p.y, q.x, 2.2, q.y);
+    edgeMain.push(p.x, 2.2 + H, p.y, q.x, 2.2 + H, q.y);
+    edgeMain.push(p.x, 2.2, p.y, p.x, 2.2 + H, p.y);
+    // the kiswah's band of gold, two thirds of the way up
+    edgeMain.push(p.x, 2.2 + H * 0.70, p.y, q.x, 2.2 + H * 0.70, q.y);
+    edgeMain.push(p.x, 2.2 + H * 0.78, p.y, q.x, 2.2 + H * 0.78, q.y);
+  }
+  var tris;
+  try { tris = THREE.ShapeUtils.triangulateShape(ring, []); } catch (e) { tris = []; }
+  for (var t = 0; t < tris.length; t++) {
+    var a = ring[tris[t][0]], b2 = ring[tris[t][1]], c2 = ring[tris[t][2]];
+    pushTri(a.x, 2.2 + H, a.y, b2.x, 2.2 + H, b2.y, c2.x, 2.2 + H, c2.y, KR);
+  }
+}
+
 var CUSTOM = {
   'Kingdom Centre': emitKingdom,
   'Al Faisaliyah Tower': emitFaisaliyah,
@@ -653,7 +789,10 @@ var CUSTOM = {
   'Aqua Tower': emitAqua,
   'Island Mosque': emitFloatingMosque,
   'Al-Rahmah Mosque': emitFloatingMosque,
-  'Al Rahmah Mosque': emitFloatingMosque
+  'Al Rahmah Mosque': emitFloatingMosque,
+  'Al-Masjid al-Haram': emitHaram,
+  'Great Mosque of Mecca': emitHaram,
+  'Kaaba': emitKaaba
 };
 
 function flatCentroid(flat) {
@@ -680,7 +819,8 @@ function isKafdCrystal(b) {
 
 /* landmarks that are short by nature — the height gate must not skip them */
 var CUSTOM_ANY_HEIGHT = {
-  'Island Mosque': 1, 'Al-Rahmah Mosque': 1, 'Al Rahmah Mosque': 1
+  'Island Mosque': 1, 'Al-Rahmah Mosque': 1, 'Al Rahmah Mosque': 1,
+  'Al-Masjid al-Haram': 1, 'Great Mosque of Mecca': 1, 'Kaaba': 1
 };
 
 function buildBuilding(b, idx) {
@@ -1006,15 +1146,30 @@ var lmCaps = [];
     var pl = kfPolylines[li];
     for (var i = 0; i < pl.length; i += 3) samples.push(pl[i]);
   }
-  if (!samples.length) return;
+  /* A focus city has no spine to stagger from, and with no samples this whole
+     block used to bail out — which left uBuild wired to nothing, so Makkah and
+     Madinah stood fully built and never rose at all. They spread from their
+     mosque instead. */
+  var origin = null, spread = 480;
+  if (!samples.length) {
+    var o = (DATA.anchors && DATA.anchors.length && DATA.anchors[DATA.anchors.length - 1])
+            || (DATA.presets && (DATA.presets.mosque || DATA.presets.overview));
+    origin = o ? [o.tx, o.tz] : [0, 0];
+    spread = 1500;
+  }
   function delayFor(x, z, id) {
-    var dm = 1e18;
-    for (var i = 0; i < samples.length; i++) {
-      var dx = samples[i][0] - x, dz = samples[i][1] - z;
-      var d = dx * dx + dz * dz;
-      if (d < dm) dm = d;
+    var dm = 1e18, dx, dz;
+    if (origin) {
+      dx = origin[0] - x; dz = origin[1] - z;
+      dm = dx * dx + dz * dz;
+    } else {
+      for (var i = 0; i < samples.length; i++) {
+        dx = samples[i][0] - x; dz = samples[i][1] - z;
+        var d = dx * dx + dz * dz;
+        if (d < dm) dm = d;
+      }
     }
-    return Math.min(1, Math.sqrt(dm) / 480) * 0.8 + Math.abs(Math.sin(id * 12.9898)) * 0.2;
+    return Math.min(1, Math.sqrt(dm) / spread) * 0.8 + Math.abs(Math.sin(id * 12.9898)) * 0.2;
   }
   var fillR = new Float32Array(fillArr.length / 3);
   var mainR = new Float32Array(edgeMain.length / 3);
